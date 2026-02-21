@@ -1,0 +1,108 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+//以下是 PetHealth tables
+
+//會員資料表
+model User {
+  id         BigInt    @id @default(autoincrement())
+  name       String
+  email      String    @unique
+  password   String?
+  provider   String    @default("credentials")
+  created_at DateTime  @default(now())
+  pets       Pet[]
+}
+
+// 寵物資料表
+model Pet {
+  id              BigInt          @id @default(autoincrement())
+  user_id         BigInt
+  name            String
+  species         String?
+  birthdate       DateTime?
+  photo_url       String?
+  chip_number     String?
+  created_at      DateTime        @default(now())
+  user            User            @relation(fields: [user_id], references: [id])
+  vaccines        Vaccine[]
+  weight_records  WeightRecord[]
+  medical_records MedicalRecord[]
+  reminders       Reminder[]
+  ai_analyses     AiAnalysis[]
+}
+
+// 疫苗紀錄表
+model Vaccine {
+  id            BigInt    @id @default(autoincrement())
+  pet_id        BigInt
+  vaccine_name  String
+  date          DateTime
+  next_due_date DateTime?
+  clinic        String?
+  vet_name      String?
+  photo_url     String?
+  created_at    DateTime  @default(now())
+  pet           Pet       @relation(fields: [pet_id], references: [id])
+}
+
+// 體重紀錄表
+model WeightRecord {
+  id         BigInt   @id @default(autoincrement())
+  pet_id     BigInt
+  date       DateTime
+  weight     Decimal  @db.Decimal(5, 2)
+  notes      String?
+  created_at DateTime @default(now())
+  pet        Pet      @relation(fields: [pet_id], references: [id])
+}
+
+
+// 就醫紀錄表
+model MedicalRecord {
+  id           BigInt   @id @default(autoincrement())
+  pet_id       BigInt
+  date         DateTime
+  clinic       String?
+  symptoms     String?
+  diagnosis    String?
+  prescription String?
+  cost         Int?
+  photo_url    String?
+  created_at   DateTime @default(now())
+  pet          Pet      @relation(fields: [pet_id], references: [id])
+}
+
+//提醒表
+model Reminder {
+  id         BigInt   @id @default(autoincrement())
+  pet_id     BigInt
+  type       String?
+  due_date   DateTime
+  sent       Boolean  @default(false)
+  created_at DateTime @default(now())
+  pet        Pet      @relation(fields: [pet_id], references: [id])
+}
+
+// AI分析記錄表
+model AiAnalysis {
+  id         BigInt   @id @default(autoincrement())
+  pet_id     BigInt
+  type       String?
+  input_data String?
+  result     String?
+  created_at DateTime @default(now())
+  pet        Pet      @relation(fields: [pet_id], references: [id])
+}
