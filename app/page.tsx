@@ -5,13 +5,13 @@ export default async function Home() {
   const session = await getServerSession()
 
   return (
-    <div>
-      <h1>PetHealth 寵物健康記錄</h1>
+    <div style={{ padding: "24px", maxWidth: "800px", margin: "0 auto" }}>
+      <h1 style={{ fontSize: "24px", fontWeight: "bold", marginBottom: "16px" }}>PetHealth 寵物健康記錄</h1>
       {session ? (
-        <div>
-          <p>歡迎，{session.user?.name}</p>
-          <Link href="/pets">我的寵物</Link>
-          <Link href="/api/auth/signout">登出</Link>
+        <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
+          <p>Welcome ! {session.user?.name}</p>
+          <Link href="/pets" >My Pets</Link>
+          <Link href="/api/auth/signout">Sign Out</Link>
         </div>
       ) : (
         <div>

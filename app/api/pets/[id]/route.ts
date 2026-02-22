@@ -1,19 +1,20 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
-
+import { authOptions } from "@/app/api/auth/[...nextauth]/route"
 import { prisma } from "@/lib/prisma"
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  const session = await getServerSession()
+  const { id } = await params
+  const session = await getServerSession(authOptions)
   if (!session?.user?.email) {
     return NextResponse.json({ error: "未登入" }, { status: 401 })
   }
 
   const pet = await prisma.pet.findUnique({
-    where: { id: BigInt(params.id) },
+    where: { id: BigInt(id) },
   })
 
   if (!pet) {
@@ -33,15 +34,16 @@ export async function GET(
 
 export async function PUT(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  const session = await getServerSession()
+  const { id } = await params
+  const session = await getServerSession(authOptions)
   if (!session?.user?.email) {
     return NextResponse.json({ error: "未登入" }, { status: 401 })
   }
 
   const pet = await prisma.pet.findUnique({
-    where: { id: BigInt(params.id) },
+    where: { id: BigInt(id) },
   })
 
   if (!pet) {
@@ -59,7 +61,7 @@ export async function PUT(
   const { name, species, birthdate, chip_number, photo_url } = await req.json()
 
   const updated = await prisma.pet.update({
-    where: { id: BigInt(params.id) },
+    where: { id: BigInt(id) },
     data: { name, species, birthdate: new Date(birthdate), chip_number, photo_url },
   })
 
@@ -68,15 +70,16 @@ export async function PUT(
 
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  const session = await getServerSession()
+  const { id } = await params
+  const session = await getServerSession(authOptions)
   if (!session?.user?.email) {
     return NextResponse.json({ error: "未登入" }, { status: 401 })
   }
 
   const pet = await prisma.pet.findUnique({
-    where: { id: BigInt(params.id) },
+    where: { id: BigInt(id) },
   })
 
   if (!pet) {
@@ -92,7 +95,7 @@ export async function DELETE(
   }
 
   await prisma.pet.delete({
-    where: { id: BigInt(params.id) },
+    where: { id: BigInt(id) },
   })
 
   return NextResponse.json({ message: "刪除成功" })
