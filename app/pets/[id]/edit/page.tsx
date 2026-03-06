@@ -9,6 +9,7 @@ type Pet = {
   species: string
   birthdate: string
   chip_number: string | null
+  target_weight:number|null
   photo_url: string | null
 }
 
@@ -21,6 +22,8 @@ export default function EditPetPage({ params }: { params: Promise<{ id: string }
   const [chipNumber, setChipNumber] = useState("")
   const [photo, setPhoto] = useState<File | null>(null)
   const [currentPhotoUrl, setCurrentPhotoUrl] = useState<string | null>(null)
+  const [tWeight, setTweight] = useState("")
+  const [unit,setUnit]=useState("kg")
   const [error, setError] = useState("")
 
   useEffect(() => {
@@ -37,6 +40,7 @@ export default function EditPetPage({ params }: { params: Promise<{ id: string }
         setBirthdate(data.birthdate.split("T")[0])
         setChipNumber(data.chip_number || "")
         setCurrentPhotoUrl(data.photo_url)
+        setTweight(data.target_weight?String(data.target_weight):"")
       })
   }, [id])
 
@@ -60,10 +64,17 @@ export default function EditPetPage({ params }: { params: Promise<{ id: string }
       photo_url = uploadData.url
     }
 
+    let weightInKg
+    if(unit==='lbs'){
+      weightInKg=parseFloat(tWeight)*0.453592
+    }else{
+      weightInKg=parseFloat(tWeight)
+    }
+
     const res = await fetch(`/api/pets/${id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, species, birthdate, chip_number: chipNumber, photo_url }),
+      body: JSON.stringify({ name, species, birthdate, chip_number: chipNumber, photo_url,target_weight:tWeight?weightInKg:null }),
     })
 
     const data = await res.json()
@@ -77,7 +88,7 @@ export default function EditPetPage({ params }: { params: Promise<{ id: string }
 
   return (
     <div>
-      <h1>Edit Pet</h1>
+      <h1>Edit Pet Page</h1>
       {currentPhotoUrl && (
         <img src={currentPhotoUrl} alt="current photo" width={100} height={100} style={{ objectFit: "cover" }} />
       )}
@@ -105,6 +116,16 @@ export default function EditPetPage({ params }: { params: Promise<{ id: string }
           value={chipNumber}
           onChange={(e) => setChipNumber(e.target.value)}
         />
+         <input
+          type="number"
+          placeholder="Target weight (optional)"
+          value={tWeight}
+          onChange={(e) => setTweight(e.target.value)}
+        />
+        <select value={unit} onChange={(e)=>setUnit(e.target.value)} style={{padding: "8px", borderRadius: "6px", border: "1px solid #374151", background: "#1f2937", color: "white"}}>
+            <option value="kg">kg</option>
+            <option value="lbs">lbs</option>
+          </select>
         <input
           type="file"
           accept="image/jpeg,image/png"

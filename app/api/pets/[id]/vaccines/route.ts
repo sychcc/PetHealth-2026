@@ -45,7 +45,7 @@ export async function POST(
   const user = await prisma.user.findUnique({ where: { email: session.user.email } })
   if (pet.user_id !== user!.id) return NextResponse.json({ error: "無權限" }, { status: 403 })
 
-  const { vaccine_name, date, next_due_date, clinic, vet_name, photo_url } = await req.json()
+  const { vaccine_name, date, next_due_date, clinic, vet_name,cost, photo_url } = await req.json()
 
   if (!vaccine_name || !date) {
     return NextResponse.json({ error: "疫苗名稱、接種日期為必填" }, { status: 400 })
@@ -59,6 +59,7 @@ export async function POST(
       next_due_date: next_due_date ? new Date(next_due_date) : null,
       clinic,
       vet_name,
+      cost,
       photo_url,
     },
   })

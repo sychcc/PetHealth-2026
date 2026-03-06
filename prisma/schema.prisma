@@ -42,6 +42,7 @@ model Pet {
   medical_records MedicalRecord[]
   reminders       Reminder[]
   ai_analyses     AiAnalysis[]
+  target_weight   Decimal?         @db.Decimal(5,2)
 }
 
 // 疫苗紀錄表
@@ -53,6 +54,7 @@ model Vaccine {
   next_due_date DateTime?
   clinic        String?
   vet_name      String?
+  cost          Int?
   photo_url     String?
   created_at    DateTime  @default(now())
   pet           Pet       @relation(fields: [pet_id], references: [id])
@@ -74,6 +76,7 @@ model WeightRecord {
 model MedicalRecord {
   id           BigInt   @id @default(autoincrement())
   pet_id       BigInt
+  brief_name   String
   date         DateTime
   clinic       String?
   symptoms     String?

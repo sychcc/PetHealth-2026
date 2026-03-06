@@ -5,9 +5,9 @@ import { prisma } from "@/lib/prisma"
 
 export async function PUT(
   req: NextRequest,
-  { params }: { params: Promise<{ id: string; vaccineId: string }> }
+  { params }: { params: Promise<{ id: string; weightId: string }> }
 ) {
-  const { id, vaccineId } = await params
+  const { id, weightId } = await params
   const session = await getServerSession(authOptions)
   if (!session?.user?.email) {
     return NextResponse.json({ error: "未登入" }, { status: 401 })
@@ -19,21 +19,19 @@ export async function PUT(
   const user = await prisma.user.findUnique({ where: { email: session.user.email } })
   if (pet.user_id !== user!.id) return NextResponse.json({ error: "無權限" }, { status: 403 })
 
-  const vaccine = await prisma.vaccine.findUnique({ where: { id: BigInt(vaccineId) } })
-  if (!vaccine) return NextResponse.json({ error: "疫苗記錄不存在" }, { status: 404 })
+  const weight_record = await prisma.weightRecord.findUnique({ where: { id: BigInt(weightId) } })
+  if (!weight_record) return NextResponse.json({ error: "體重記錄不存在" }, { status: 404 })
 
-  const { vaccine_name, date, next_due_date, clinic, vet_name, cost,photo_url } = await req.json()
+  const { weight, date, notes } = await req.json()
 
-  const updated = await prisma.vaccine.update({
-    where: { id: BigInt(vaccineId) },
+  const updated = await prisma.weightRecord.update({
+    where: { id: BigInt(weightId) },
     data: {
-      vaccine_name,
+      pet_id: BigInt(id),
+      weight,
       date: new Date(date),
-      next_due_date: next_due_date ? new Date(next_due_date) : null,
-      clinic,
-      vet_name,
-      cost,
-      photo_url,
+      notes: notes || null,
+
     },
   })
 
@@ -44,9 +42,9 @@ export async function PUT(
 
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: Promise<{ id: string; vaccineId: string }> }
+  { params }: { params: Promise<{ id: string; weightId: string }> }
 ) {
-  const { id, vaccineId } = await params
+  const { id, weightId } = await params
   const session = await getServerSession(authOptions)
   if (!session?.user?.email) {
     return NextResponse.json({ error: "未登入" }, { status: 401 })
@@ -58,10 +56,10 @@ export async function DELETE(
   const user = await prisma.user.findUnique({ where: { email: session.user.email } })
   if (pet.user_id !== user!.id) return NextResponse.json({ error: "無權限" }, { status: 403 })
 
-  const vaccine = await prisma.vaccine.findUnique({ where: { id: BigInt(vaccineId) } })
-  if (!vaccine) return NextResponse.json({ error: "疫苗記錄不存在" }, { status: 404 })
+  const weight_record = await prisma.weightRecord.findUnique({ where: { id: BigInt(weightId) } })
+  if (!weight_record) return NextResponse.json({ error: "體重記錄不存在" }, { status: 404 })
 
-  await prisma.vaccine.delete({ where: { id: BigInt(vaccineId) } })
+  await prisma.weightRecord.delete({ where: { id: BigInt(weightId) } })
 
   return NextResponse.json({ message: "刪除成功" })
 }

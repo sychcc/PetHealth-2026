@@ -11,6 +11,7 @@ type Vaccine = {
   next_due_date: string | null
   clinic: string | null
   vet_name: string | null
+  cost:number|null
   photo_url: string | null
 }
 
@@ -18,6 +19,7 @@ export default function VaccinesPage({ params }: { params: Promise<{ id: string 
   const router = useRouter()
   const [id, setId] = useState("")
   const [vaccines, setVaccines] = useState<Vaccine[]>([])
+  const [petName,setPetName]=useState("")
 
   useEffect(() => {
     params.then((p) => setId(p.id))
@@ -28,6 +30,9 @@ export default function VaccinesPage({ params }: { params: Promise<{ id: string 
     fetch(`/api/pets/${id}/vaccines`, { credentials: "include" })
       .then((res) => res.json())
       .then((data) => setVaccines(data))
+      fetch(`/api/pets/${id}`,{ credentials: "include" })
+      .then((res) => res.json())
+      .then((data)=>setPetName(data.name))
   }, [id])
 
   async function handleDelete(vaccineId: string) {
@@ -79,6 +84,7 @@ function isExpired(next_due_date: string | null) {
 )}
               {v.clinic && <p style={{ color: "#9ca3af", fontSize: "14px" }}>Clinic: {v.clinic}</p>}
               {v.vet_name && <p style={{ color: "#9ca3af", fontSize: "14px" }}>Vet: {v.vet_name}</p>}
+              {v.cost && <p style={{ color: "#9ca3af", fontSize: "14px" }}>Cost: NTD {v.cost}</p>}
               {v.photo_url && (
               <img src={v.photo_url} alt="vaccine record" style={{ width: "100px", height: "100px", objectFit: "cover", borderRadius: "6px", marginTop: "8px" }} />
 )}
@@ -91,7 +97,7 @@ function isExpired(next_due_date: string | null) {
         </div>
       )}
       <div style={{ marginTop: "24px" }}>
-        <Link href={`/pets/${id}`} style={{ color: "#9ca3af" }}>Back to Pet</Link>
+        <Link href={`/pets/${id}`} style={{ color: "#9ca3af" }}>Back to {petName}'s page</Link>
       </div>
     </div>
   )

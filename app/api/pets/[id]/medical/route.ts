@@ -3,11 +3,11 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/app/api/auth/[...nextauth]/route"
 import { prisma } from "@/lib/prisma"
 
-export async function PUT(
+export async function GET(
   req: NextRequest,
-  { params }: { params: Promise<{ id: string; vaccineId: string }> }
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  const { id, vaccineId } = await params
+  const { id } = await params
   const session = await getServerSession(authOptions)
   if (!session?.user?.email) {
     return NextResponse.json({ error: "未登入" }, { status: 401 })
@@ -19,49 +19,54 @@ export async function PUT(
   const user = await prisma.user.findUnique({ where: { email: session.user.email } })
   if (pet.user_id !== user!.id) return NextResponse.json({ error: "無權限" }, { status: 403 })
 
-  const vaccine = await prisma.vaccine.findUnique({ where: { id: BigInt(vaccineId) } })
-  if (!vaccine) return NextResponse.json({ error: "疫苗記錄不存在" }, { status: 404 })
+  const medicalRecord = await prisma.medicalRecord.findMany({
+    where: { pet_id: BigInt(id) },
+    orderBy: { date: "desc" },
+  })
 
-  const { vaccine_name, date, next_due_date, clinic, vet_name, cost,photo_url } = await req.json()
+  return NextResponse.json(
+    medicalRecord.map((m) => ({ ...m, id: String(m.id), pet_id: String(m.pet_id) }))
+  )
+}
 
-  const updated = await prisma.vaccine.update({
-    where: { id: BigInt(vaccineId) },
+export async function POST(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id } = await params
+  const session = await getServerSession(authOptions)
+  if (!session?.user?.email) {
+    return NextResponse.json({ error: "未登入" }, { status: 401 })
+  }
+
+  const pet = await prisma.pet.findUnique({ where: { id: BigInt(id) } })
+  if (!pet) return NextResponse.json({ error: "寵物不存在" }, { status: 404 })
+
+  const user = await prisma.user.findUnique({ where: { email: session.user.email } })
+  if (pet.user_id !== user!.id) return NextResponse.json({ error: "無權限" }, { status: 403 })
+
+  const { date,brief_name, clinic, symptoms,diagnosis,prescription,cost, photo_url } = await req.json()
+
+  if (!date||!brief_name) {
+    return NextResponse.json({ error: "就診日期和原因為必填" }, { status: 400 })
+  }
+
+  const medical = await prisma.medicalRecord.create({
     data: {
-      vaccine_name,
+      pet_id: BigInt(id),
       date: new Date(date),
-      next_due_date: next_due_date ? new Date(next_due_date) : null,
-      clinic,
-      vet_name,
-      cost,
-      photo_url,
+      brief_name:brief_name,
+      clinic:clinic||null,
+      symptoms:symptoms||null,
+      diagnosis:diagnosis||null,
+      prescription:prescription||null,
+      cost:cost||null,
+      photo_url:photo_url||null,
     },
   })
 
   return NextResponse.json(
-    { ...updated, id: String(updated.id), pet_id: String(updated.pet_id) }
+    { ...medical, id: String(medical.id), pet_id: String(medical.pet_id) },
+    { status: 201 }
   )
-}
-
-export async function DELETE(
-  req: NextRequest,
-  { params }: { params: Promise<{ id: string; vaccineId: string }> }
-) {
-  const { id, vaccineId } = await params
-  const session = await getServerSession(authOptions)
-  if (!session?.user?.email) {
-    return NextResponse.json({ error: "未登入" }, { status: 401 })
-  }
-
-  const pet = await prisma.pet.findUnique({ where: { id: BigInt(id) } })
-  if (!pet) return NextResponse.json({ error: "寵物不存在" }, { status: 404 })
-
-  const user = await prisma.user.findUnique({ where: { email: session.user.email } })
-  if (pet.user_id !== user!.id) return NextResponse.json({ error: "無權限" }, { status: 403 })
-
-  const vaccine = await prisma.vaccine.findUnique({ where: { id: BigInt(vaccineId) } })
-  if (!vaccine) return NextResponse.json({ error: "疫苗記錄不存在" }, { status: 404 })
-
-  await prisma.vaccine.delete({ where: { id: BigInt(vaccineId) } })
-
-  return NextResponse.json({ message: "刪除成功" })
 }
