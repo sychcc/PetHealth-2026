@@ -134,91 +134,181 @@ export default function PetDetailPage({ params }: { params: Promise<{ id: string
 
  }
 
-  return (
-    <>
-  <div style={{ padding: "24px", maxWidth: "600px", margin: "0 auto" }}>
-    <h1 style={{ fontSize: "24px", fontWeight: "bold", marginBottom: "16px" }}>{pet.name}</h1>
-    {pet.photo_url && (
-      <img src={pet.photo_url} alt={pet.name} style={{ width: "200px", height: "200px", objectFit: "cover", borderRadius: "8px", marginBottom: "16px" }} />
-    )}
-    <p>Species: {pet.species}</p>
-    <p>Birthday: {new Date(pet.birthdate).toLocaleDateString()} 我是 {getZodiac()}</p>
-    {pet.chip_number && <p>Chip Number: {pet.chip_number}</p>}
-    {pet.target_weight &&<p>Target Weight: {pet.target_weight} kgs</p> }
-    <p>Age: {age} years old</p>
-    <div style={{ display: "flex", gap: "12px", marginTop: "16px" }}>
-  <Link href={`/pets/${id}/vaccines`} style={{ background: "#4b5563", color: "white", padding: "8px 16px", borderRadius: "6px", textDecoration: "none" }}>Vaccine Records</Link>
-  <Link href={`/pets/${id}/weight`} style={{ background: "#4b5563", color: "white", padding: "8px 16px", borderRadius: "6px", textDecoration: "none" }}>Weight Records</Link>
-  <Link href={`/pets/${id}/medical`} style={{ background: "#4b5563", color: "white", padding: "8px 16px", borderRadius: "6px", textDecoration: "none" }}>Medical Records</Link>
-  <Link href={`/pets/${id}/edit`} style={{ background: "#6b7280", color: "white", padding: "8px 16px", borderRadius: "6px", textDecoration: "none" }}>Edit</Link>
-  <button onClick={handleDelete} style={{ background: "#374151", color: "white", padding: "8px 16px", borderRadius: "6px", border: "none", cursor: "pointer" }}>Delete</button>
-  <Link href="/pets" style={{ background: "#1f2937", color: "white", padding: "8px 16px", borderRadius: "6px", textDecoration: "none" }}>Back</Link>
-</div>
-  </div>
-  {/*dahboard */}
-  {/*ai 分析：分析按鈕+展開報告按鈕/ 如果疫苗、體重、醫療紀錄都沒有，就顯示：目前還沒有資料，先去新增寵物的紀錄吧！ */}
-  {weightRecords.length==0&&medicalRecords.length==0&&vaccineRecords.length==0&&(<p>目前還沒有健康資料，先去新增寵物的健康紀錄吧！</p>)}
-  {(weightRecords.length>0||medicalRecords.length>0||vaccineRecords.length>0) &&(<button onClick={handleAiSummary}>取得AI 健康分析</button>)}
+//   return (
+//     <>
+//   <div style={{ padding: "24px", maxWidth: "600px", margin: "0 auto" }}>
+//     <h1 style={{ fontSize: "24px", fontWeight: "bold", marginBottom: "16px" }}>{pet.name}</h1>
+//     {pet.photo_url && (
+//       <img src={pet.photo_url} alt={pet.name} style={{ width: "200px", height: "200px", objectFit: "cover", borderRadius: "8px", marginBottom: "16px" }} />
+//     )}
+//     <p>Species: {pet.species}</p>
+//     <p>Birthday: {new Date(pet.birthdate).toLocaleDateString()} 我是 {getZodiac()}</p>
+//     {pet.chip_number && <p>Chip Number: {pet.chip_number}</p>}
+//     {pet.target_weight &&<p>Target Weight: {pet.target_weight} kgs</p> }
+//     <p>Age: {age} years old</p>
+//     <div style={{ display: "flex", gap: "12px", marginTop: "16px" }}>
+//   <Link href={`/pets/${id}/vaccines`} style={{ background: "#4b5563", color: "white", padding: "8px 16px", borderRadius: "6px", textDecoration: "none" }}>Vaccine Records</Link>
+//   <Link href={`/pets/${id}/weight`} style={{ background: "#4b5563", color: "white", padding: "8px 16px", borderRadius: "6px", textDecoration: "none" }}>Weight Records</Link>
+//   <Link href={`/pets/${id}/medical`} style={{ background: "#4b5563", color: "white", padding: "8px 16px", borderRadius: "6px", textDecoration: "none" }}>Medical Records</Link>
+//   <Link href={`/pets/${id}/edit`} style={{ background: "#6b7280", color: "white", padding: "8px 16px", borderRadius: "6px", textDecoration: "none" }}>Edit</Link>
+//   <button onClick={handleDelete} style={{ background: "#374151", color: "white", padding: "8px 16px", borderRadius: "6px", border: "none", cursor: "pointer" }}>Delete</button>
+//   <Link href="/pets" style={{ background: "#1f2937", color: "white", padding: "8px 16px", borderRadius: "6px", textDecoration: "none" }}>Back</Link>
+// </div>
+//   </div>
+//   {/*dahboard */}
+//   {/*ai 分析：分析按鈕+展開報告按鈕/ 如果疫苗、體重、醫療紀錄都沒有，就顯示：目前還沒有資料，先去新增寵物的紀錄吧！ */}
+//   {weightRecords.length==0&&medicalRecords.length==0&&vaccineRecords.length==0&&(<p>目前還沒有健康資料，先去新增寵物的健康紀錄吧！</p>)}
+//   {(weightRecords.length>0||medicalRecords.length>0||vaccineRecords.length>0) &&(<button onClick={handleAiSummary}>取得AI 健康分析</button>)}
   
-  {summary &&(
-    <div>
-      <h2>ai健康摘要</h2>
-      <p>{summary}</p>
-      <button onClick={()=>setShowFull(!showFull)}>
-        {showFull?"收起報告":"查看完整報告"}
-      </button>
-      {showFull&&<p>{fullReport}</p>}
-    </div>
-  )}
+//   {summary &&(
+//     <div>
+//       <h2>ai健康摘要</h2>
+//       <p>{summary}</p>
+//       <button onClick={()=>setShowFull(!showFull)}>
+//         {showFull?"收起報告":"查看完整報告"}
+//       </button>
+//       {showFull&&<p>{fullReport}</p>}
+//     </div>
+//   )}
   
-  {/*體重趨勢圖 */}
-  {weightRecords.length>0 &&(
-    <div>
-      <h2>體重趨勢</h2>
-      <Line
-        data={{
-          labels:weightRecords.map((w)=>w.date.split("T")[0]),
-          datasets:[{
-            label:"實際體重(kg)",
-            data:weightRecords.map((w)=>w.weight),
-            borderColor:"rgb(75, 192, 192)",
-            tension:0.1
-          },
-          {
-            label:"目標體重(kg)",
-            data:weightRecords.map(()=>pet.target_weight),
-            borderColor:"	#FF2D2D",
-            tension:0.1
-          }
+//   {/*體重趨勢圖 */}
+//   {weightRecords.length>0 &&(
+//     <div>
+//       <h2>體重趨勢</h2>
+//       <Line
+//         data={{
+//           labels:weightRecords.map((w)=>w.date.split("T")[0]),
+//           datasets:[{
+//             label:"實際體重(kg)",
+//             data:weightRecords.map((w)=>w.weight),
+//             borderColor:"rgb(75, 192, 192)",
+//             tension:0.1
+//           },
+//           {
+//             label:"目標體重(kg)",
+//             data:weightRecords.map(()=>pet.target_weight),
+//             borderColor:"	#FF2D2D",
+//             tension:0.1
+//           }
           
-        ]
-        }}
-        options={{
-          plugins:{
-            tooltip:{
-              callbacks:{
-                afterBody:(context)=>{
-                  //只出現在第一條線
-                  if(context[0].datasetIndex !==0) return ""
-                  const actualWeight=context[0].parsed.y
-                  const targetWeight=pet.target_weight
-                  if(!targetWeight)return ""
-                  const diff=parseFloat((actualWeight!-targetWeight).toFixed(1))
-                  return diff>0
-                    ?`和目標體重相差 +${diff} kg(超重)`
-                    :diff<0
-                    ?`和目標體重相差 ${diff} kg(未達目標)`
-                    :`達成目標體重！`
+//         ]
+//         }}
+//         options={{
+//           plugins:{
+//             tooltip:{
+//               callbacks:{
+//                 afterBody:(context)=>{
+//                   //只出現在第一條線
+//                   if(context[0].datasetIndex !==0) return ""
+//                   const actualWeight=context[0].parsed.y
+//                   const targetWeight=pet.target_weight
+//                   if(!targetWeight)return ""
+//                   const diff=parseFloat((actualWeight!-targetWeight).toFixed(1))
+//                   return diff>0
+//                     ?`和目標體重相差 +${diff} kg(超重)`
+//                     :diff<0
+//                     ?`和目標體重相差 ${diff} kg(未達目標)`
+//                     :`達成目標體重！`
+//                 }
+//               }
+//             }
+//           }
+//         }}
+//       />
+//     </div>
+//   )}
+  
+//   </>
+  
+// )
+
+return (
+  <div style={{ maxWidth: "800px", margin: "0 auto", padding: "32px 24px" }}>
+
+    {/* 寵物基本資料區 */}
+    <div style={{ display: "flex", gap: "24px", alignItems: "flex-start", marginBottom: "24px" }}>
+      {pet.photo_url ? (
+        <img src={pet.photo_url} alt={pet.name} style={{ width: "140px", height: "140px", objectFit: "cover", borderRadius: "12px", flexShrink: 0 }} />
+      ) : (
+        <div style={{ width: "140px", height: "140px", background: "#1f2937", borderRadius: "12px", display: "flex", alignItems: "center", justifyContent: "center", color: "#6b7280", flexShrink: 0 }}>No Photo</div>
+      )}
+      <div>
+        <h1 style={{ fontSize: "28px", fontWeight: "bold", marginBottom: "8px" }}>{pet.name}</h1>
+        <p style={{ color: "#9ca3af", margin: "4px 0" }}>我是{pet.species}</p>
+        <p style={{ color: "#9ca3af", margin: "4px 0" }}>{new Date(pet.birthdate).toLocaleDateString()} · {getZodiac()} · {age} years old</p>
+        {pet.chip_number && <p style={{ color: "#9ca3af", margin: "4px 0" }}>Chip: {pet.chip_number}</p>}
+        {pet.target_weight && <p style={{ color: "#9ca3af", margin: "4px 0" }}>Target: {pet.target_weight} kg</p>}
+      </div>
+    </div>
+
+    {/* 操作按鈕 */}
+    <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginBottom: "32px", paddingBottom: "24px", borderBottom: "1px solid #1f2937" }}>
+      <Link href={`/pets/${id}/vaccines`} style={{ background: "#1f2937", color: "white", padding: "8px 14px", borderRadius: "6px", textDecoration: "none", fontSize: "14px" }}>Vaccines</Link>
+      <Link href={`/pets/${id}/weight`} style={{ background: "#1f2937", color: "white", padding: "8px 14px", borderRadius: "6px", textDecoration: "none", fontSize: "14px" }}>Weight</Link>
+      <Link href={`/pets/${id}/medical`} style={{ background: "#1f2937", color: "white", padding: "8px 14px", borderRadius: "6px", textDecoration: "none", fontSize: "14px" }}>Medical</Link>
+      <Link href={`/pets/${id}/edit`} style={{ background: "#1f2937", color: "white", padding: "8px 14px", borderRadius: "6px", textDecoration: "none", fontSize: "14px" }}>Edit</Link>
+      <button onClick={handleDelete} style={{ background: "#1f2937", color: "#ef4444", padding: "8px 14px", borderRadius: "6px", border: "none", cursor: "pointer", fontSize: "14px" }}>Delete</button>
+    </div>
+
+    {/* Dashboard */}
+    {weightRecords.length === 0 && medicalRecords.length === 0 && vaccineRecords.length === 0 && (
+      <p style={{ color: "#6b7280", textAlign: "center", padding: "24px" }}>目前還沒有健康資料，先去新增寵物的健康紀錄吧！</p>
+    )}
+
+    {(weightRecords.length > 0 || medicalRecords.length > 0 || vaccineRecords.length > 0) && (
+      <div style={{ marginBottom: "24px" }}>
+        <button onClick={handleAiSummary} disabled={loadingAi} style={{ background: "#4b5563", color: "white", padding: "10px 20px", borderRadius: "8px", border: "none", cursor: "pointer", fontSize: "14px" }}>
+          {loadingAi ? "分析中..." : "取得 AI 健康分析"}
+        </button>
+      </div>
+    )}
+
+    {summary && (
+      <div style={{ background: "#111827", border: "1px solid #1f2937", borderRadius: "10px", padding: "20px", marginBottom: "24px" }}>
+        <h2 style={{ fontSize: "16px", fontWeight: "bold", marginBottom: "12px" }}>AI 健康摘要</h2>
+        <p style={{ color: "#d1d5db", lineHeight: "1.8", margin: 0 }}>{summary}</p>
+        <button onClick={() => setShowFull(!showFull)} style={{ background: "transparent", color: "#9ca3af", border: "1px solid #374151", padding: "6px 14px", borderRadius: "6px", cursor: "pointer", fontSize: "13px", marginTop: "12px" }}>
+          {showFull ? "收起報告" : "查看完整報告"}
+        </button>
+        {showFull && <p style={{ color: "#9ca3af", lineHeight: "2", marginTop: "12px" }}>{fullReport}</p>}
+      </div>
+    )}
+
+    {weightRecords.length > 0 && (
+      <div style={{ background: "#111827", border: "1px solid #1f2937", borderRadius: "10px", padding: "20px" }}>
+        <h2 style={{ fontSize: "16px", fontWeight: "bold", marginBottom: "16px" }}>體重趨勢</h2>
+        <div style={{ height: "250px" }}>
+          <Line
+            data={{
+              labels: weightRecords.map((w) => w.date.split("T")[0]),
+              datasets: [
+                { label: "實際體重(kg)", data: weightRecords.map((w) => w.weight), borderColor: "rgb(75, 192, 192)", tension: 0.1 },
+                { label: "目標體重(kg)", data: weightRecords.map(() => pet.target_weight), borderColor: "#FF2D2D", tension: 0.1 }
+              ]
+            }}
+            options={{
+              maintainAspectRatio: false,
+              plugins: {
+                tooltip: {
+                  callbacks: {
+                    afterBody: (context) => {
+                      if (context[0].datasetIndex !== 0) return ""
+                      const actualWeight = context[0].parsed.y
+                      const targetWeight = pet.target_weight
+                      if (!targetWeight) return ""
+                      const diff = parseFloat((actualWeight! - targetWeight).toFixed(1))
+                      return diff > 0 ? `和目標體重相差 +${diff} kg（超重）` : diff < 0 ? `和目標體重相差 ${diff} kg（未達目標）` : `達成目標體重！`
+                    }
+                  }
                 }
               }
-            }
-          }
-        }}
-      />
-    </div>
-  )}
-  
-  </>
-  
+            }}
+          />
+        </div>
+      </div>
+    )}
+  </div>
 )
+
+
 }
