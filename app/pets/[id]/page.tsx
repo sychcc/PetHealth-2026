@@ -38,6 +38,10 @@ export default function PetDetailPage({ params }: { params: Promise<{ id: string
   const router = useRouter()
   const [pet, setPet] = useState<Pet | null>(null)
   const [weightRecords,setWeightRecords]=useState<WeightRecord[]>([])
+  //用來判斷要不要顯示取得ai健康分析的按鈕
+  const [vaccineRecords,setVaccineRecords]=useState<{id:string}[]>([])
+  const [medicalRecords,setMedicalRecords]=useState<{id:string}[]>([])
+  //
   const [error, setError] = useState("")
   const [id, setId] = useState<string>("")
   // for ai-summary
@@ -66,6 +70,15 @@ export default function PetDetailPage({ params }: { params: Promise<{ id: string
     fetch(`/api/pets/${id}/weight`, { credentials: "include" })
       .then((res) => res.json())
       .then((data)=>setWeightRecords(data))
+    //疫苗紀錄
+    fetch(`/api/pets/${id}/vaccine`, { credentials: "include" })
+      .then((res) => res.json())
+      .then((data)=>setVaccineRecords(data))
+    //醫療紀錄
+    fetch(`/api/pets/${id}/medical`, { credentials: "include" })
+      .then((res) => res.json())
+      .then((data)=>setMedicalRecords(data))
+
   }, [id])
 
   async function handleDelete() {
@@ -144,7 +157,9 @@ export default function PetDetailPage({ params }: { params: Promise<{ id: string
   </div>
   {/*dahboard */}
   {/*ai 分析：分析按鈕+展開報告按鈕/ 如果疫苗、體重、醫療紀錄都沒有，就顯示：目前還沒有資料，先去新增寵物的紀錄吧！ */}
-  <button onClick={handleAiSummary}>取得AI 健康分析</button>
+  {weightRecords.length==0&&medicalRecords.length==0&&vaccineRecords.length==0&&(<p>目前還沒有健康資料，先去新增寵物的健康紀錄吧！</p>)}
+  {(weightRecords.length>0||medicalRecords.length>0||vaccineRecords.length>0) &&(<button onClick={handleAiSummary}>取得AI 健康分析</button>)}
+  
   {summary &&(
     <div>
       <h2>ai健康摘要</h2>
