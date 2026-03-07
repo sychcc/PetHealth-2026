@@ -71,7 +71,7 @@ export default function PetDetailPage({ params }: { params: Promise<{ id: string
       .then((res) => res.json())
       .then((data)=>setWeightRecords(data))
     //疫苗紀錄
-    fetch(`/api/pets/${id}/vaccine`, { credentials: "include" })
+    fetch(`/api/pets/${id}/vaccines`, { credentials: "include" })
       .then((res) => res.json())
       .then((data)=>setVaccineRecords(data))
     //醫療紀錄
