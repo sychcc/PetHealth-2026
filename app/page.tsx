@@ -41,7 +41,7 @@ export default function HomePage() {
       <div style={{ fontSize: "64px", marginBottom: "16px" }}>🐾</div>
       <h1 style={{ fontSize: "36px", fontWeight: "bold", marginBottom: "12px" }}>PetHealth 寵物健康記錄</h1>
       <p style={{ color: "#9ca3af", fontSize: "16px", marginBottom: "32px" }}>
-        記錄你的毛小孩健康狀況、疫苗、體重與就醫歷史
+        記錄毛小孩健康狀況、疫苗、體重與就醫歷史
       </p>
       {session ? (
         <Link href="/pets" style={{
@@ -49,7 +49,7 @@ export default function HomePage() {
           padding: "12px 32px", borderRadius: "8px",
           textDecoration: "none", fontSize: "16px"
         }}>
-          查看我的寵物 →
+          查看我的寵物
         </Link>
       ) : (
         <div style={{ display: "flex", gap: "12px" }}>

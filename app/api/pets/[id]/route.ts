@@ -93,6 +93,11 @@ export async function DELETE(
   if (pet.user_id !== user!.id) {
     return NextResponse.json({ error: "無權限" }, { status: 403 })
   }
+  await prisma.weightRecord.deleteMany({ where: { pet_id: BigInt(id) } })
+  await prisma.vaccine.deleteMany({ where: { pet_id: BigInt(id) } })
+  await prisma.medicalRecord.deleteMany({ where: { pet_id: BigInt(id) } })
+  await prisma.reminder.deleteMany({ where: { pet_id: BigInt(id) } })
+  await prisma.aiAnalysis.deleteMany({ where: { pet_id: BigInt(id) } })
 
   await prisma.pet.delete({
     where: { id: BigInt(id) },

@@ -62,9 +62,13 @@ export default function CreateVaccinePage({ params }: { params: Promise<{ id: st
         <input type="number" placeholder="Cost (optional)" value={cost} step="1" min="0" onChange={(e) => setCost(e.target.value)} style={{ padding: "8px", borderRadius: "6px", border: "1px solid #374151", background: "#1f2937", color: "white" }} />
         <input type="file" accept="image/jpeg,image/png" onChange={(e) => setPhoto(e.target.files?.[0] || null)} style={{ color: "white" }} />
         {error && <p style={{ color: "#dc2626" }}>{error}</p>}
-        <div style={{ marginTop: "24px" }}>
-            <Link style={{ background: "#4b5563", color: "white", padding: "10px", borderRadius: "6px", border: "none", cursor: "pointer" }}href={`/pets/${id}`}>Cancel</Link>
-            <button type="submit" style={{ background: "#4b5563", color: "white", padding: "10px", borderRadius: "6px", border: "none", cursor: "pointer" }}>Add Vaccine</button>
+        <div style={{ display: "flex", gap: "12px", marginTop: "24px" }}>
+          <Link href={`/pets/${id}`} style={{ flex: 1, background: "#1f2937", color: "white", padding: "10px", borderRadius: "6px", border: "1px solid #374151", cursor: "pointer", textDecoration: "none", textAlign: "center", fontSize: "14px" }}>
+            Cancel
+          </Link>
+          <button type="submit" style={{ flex: 1, background: "#4b5563", color: "white", padding: "10px", borderRadius: "6px", border: "none", cursor: "pointer", fontSize: "14px" }}>
+            Add Vaccine
+          </button>
         </div>
         
       </form>

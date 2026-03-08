@@ -24,3 +24,31 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  #pdf-report, #pdf-report * {
+    visibility: visible;
+  }
+  #pdf-report {
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 100%;
+    padding: 20px;
+    background: white !important;
+    color: black !important;
+  }
+  #pdf-report div {
+    background: white !important;
+    border-color: #ddd !important;
+  }
+  #pdf-report p, #pdf-report h2, #pdf-report h3, #pdf-report strong {
+    color: black !important;
+  }
+  #pdf-report button {
+    display: none !important;
+  }
+}

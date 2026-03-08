@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import {Line} from "react-chartjs-2"
+import jsPDF from "jspdf"
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -34,13 +35,30 @@ type WeightRecord={
   notes:string|null
 }
 
+type VaccineRecord = {
+  id: string
+  vaccine_name: string
+  date: string
+  next_due_date: string | null
+  clinic: string | null
+}
+
+type MedicalRecord = {
+  id: string
+  brief_name: string
+  date: string
+  clinic: string | null
+  diagnosis: string | null
+  cost: number | null
+}
+
 export default function PetDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter()
   const [pet, setPet] = useState<Pet | null>(null)
   const [weightRecords,setWeightRecords]=useState<WeightRecord[]>([])
   //用來判斷要不要顯示取得ai健康分析的按鈕
-  const [vaccineRecords,setVaccineRecords]=useState<{id:string}[]>([])
-  const [medicalRecords,setMedicalRecords]=useState<{id:string}[]>([])
+  const [vaccineRecords,setVaccineRecords]=useState<VaccineRecord[]>([])
+  const [medicalRecords,setMedicalRecords]=useState<MedicalRecord[]>([])
   //
   const [error, setError] = useState("")
   const [id, setId] = useState<string>("")
@@ -106,6 +124,54 @@ export default function PetDetailPage({ params }: { params: Promise<{ id: string
       setLoadingAi(false)
     })
   }
+  // pdf
+  async function handleDownloadPdf() {
+    window.print()
+//   const { default: jsPDF } = await import("jspdf")
+//   const { default: html2canvas } = await import("html2canvas")
+//   const doc = new jsPDF()
+  
+//   const pageWidth = doc.internal.pageSize.getWidth()
+//   const margin = 15
+//   const maxWidth = pageWidth - margin * 2
+//   let y = 15
+
+//  // 用截圖方式處理中文內容
+//   const reportDiv = document.getElementById("pdf-report")
+//   if (reportDiv) {
+//   const canvas = await html2canvas(reportDiv, { backgroundColor: "#ffffff", scale: 2 })
+//   const imgData = canvas.toDataURL("image/png")
+//   const imgWidth = maxWidth
+//   const imgHeight = (canvas.height * imgWidth) / canvas.width
+//   const pageHeight = doc.internal.pageSize.getHeight()
+//   const usableHeight = pageHeight - margin * 2
+
+//   let remainingHeight = imgHeight
+//   let sourceY = 0
+
+//   while (remainingHeight > 0) {
+//     const sliceHeight = Math.min(remainingHeight, usableHeight)
+//     const canvasSlice = document.createElement("canvas")
+//     canvasSlice.width = canvas.width
+//     canvasSlice.height = (sliceHeight * canvas.width) / imgWidth
+
+//     const ctx = canvasSlice.getContext("2d")!
+//     ctx.drawImage(canvas, 0, sourceY * (canvas.width / imgWidth), canvas.width, canvasSlice.height, 0, 0, canvasSlice.width, canvasSlice.height)
+
+//     const sliceData = canvasSlice.toDataURL("image/png")
+//     doc.addImage(sliceData, "PNG", margin, margin, imgWidth, sliceHeight)
+
+//     remainingHeight -= sliceHeight
+//     sourceY += sliceHeight
+
+//     if (remainingHeight > 0) doc.addPage()
+//   }
+// }
+
+//   doc.save(`${pet!.name}_健康報告.pdf`)
+
+
+}
    // age & 星座
  const birthday=new Date(pet.birthdate)
  const today=new Date()
@@ -262,21 +328,75 @@ return (
         </button>
       </div>
     )}
+    {/* 寵物健康報告 */}
+    <div id="pdf-report" style={{ background: "#ffffff", color: "#000000", padding: "20px", borderRadius: "10px" }}>
+      <h2 style={{ color: "#000", marginBottom: "4px" }}>{pet.name} 的健康報告</h2>
+      <p style={{ color: "#555", fontSize: "13px", marginBottom: "16px" }}>生成日期：{new Date().toLocaleDateString()}</p>
 
-    {summary && (
+      {/* 寵物基本資料 */}
+      <div style={{ borderBottom: "1px solid #eee", paddingBottom: "12px", marginBottom: "16px" }}>
+    <p style={{ color: "#333", fontSize: "13px", margin: "4px 0" }}>名字：{pet.name}</p>
+    <p style={{ color: "#333", fontSize: "13px", margin: "4px 0" }}>品種：{pet.species}</p>
+    <p style={{ color: "#333", fontSize: "13px", margin: "4px 0" }}>生日：{new Date(pet.birthdate).toLocaleDateString()} · {getZodiac()} · {age} years old</p>
+    {pet.chip_number && <p style={{ color: "#333", fontSize: "13px", margin: "4px 0" }}>晶片號碼：{pet.chip_number}</p>}
+    {pet.target_weight && <p style={{ color: "#333", fontSize: "13px", margin: "4px 0" }}>目標體重：{pet.target_weight} kg</p>}
+  </div>
+
+
+         {summary && (
       <div style={{ background: "#111827", border: "1px solid #1f2937", borderRadius: "10px", padding: "20px", marginBottom: "24px" }}>
-        <h2 style={{ fontSize: "16px", fontWeight: "bold", marginBottom: "12px" }}>AI 健康摘要</h2>
+        <h2 style={{ fontSize: "16px", fontWeight: "bold", marginBottom: "12px",color:"white" }}>AI 健康摘要</h2>
         <p style={{ color: "#d1d5db", lineHeight: "1.8", margin: 0 }}>{summary}</p>
         <button onClick={() => setShowFull(!showFull)} style={{ background: "transparent", color: "#9ca3af", border: "1px solid #374151", padding: "6px 14px", borderRadius: "6px", cursor: "pointer", fontSize: "13px", marginTop: "12px" }}>
           {showFull ? "收起報告" : "查看完整報告"}
         </button>
+
+        {showFull && (
+          <button
+            onClick={handleDownloadPdf}
+            style={{ background: "#4b5563", color: "white", border: "none", padding: "6px 14px", borderRadius: "6px", cursor: "pointer", fontSize: "13px", marginTop: "8px", marginLeft: "8px" }}
+           >
+            下載 PDF
+          </button>
+)}     
         {showFull && <p style={{ color: "#9ca3af", lineHeight: "2", marginTop: "12px" }}>{fullReport}</p>}
       </div>
     )}
 
+    {/*疫苗紀錄 */}
+    {vaccineRecords.length>0 &&(
+    <div style={{ marginBottom: "16px" }}>
+    <h3 style={{ color: "#000" }}>疫苗紀錄</h3>
+    {vaccineRecords.map((v) => (
+      <div key={v.id} style={{ borderBottom: "1px solid #eee", padding: "6px 0", fontSize: "13px", color: "#333" }}>
+        <strong>{v.vaccine_name}</strong> — {v.date.split("T")[0]}
+        {v.next_due_date && ` · 下次：${v.next_due_date.split("T")[0]}`}
+        {v.clinic && ` · ${v.clinic}`}
+      </div>
+    ))}
+  </div>
+
+    )}
+
+    {/*醫療紀錄 */}
+    {medicalRecords.length > 0 && (
+  <div style={{ marginBottom: "16px" }}>
+    <h3 style={{ color: "#000" }}>就醫紀錄</h3>
+    {medicalRecords.map((m) => (
+      <div key={m.id} style={{ borderBottom: "1px solid #eee", padding: "6px 0", fontSize: "13px", color: "#333" }}>
+        <strong>{m.brief_name}</strong> — {m.date.split("T")[0]}
+        {m.clinic && ` · ${m.clinic}`}
+        {m.diagnosis && ` · 診斷：${m.diagnosis}`}
+        {m.cost && ` · 費用：${m.cost} 元`}
+      </div>
+    ))}
+  </div>
+)}
+
+    {/*體重趨勢圖 */}
     {weightRecords.length > 0 && (
       <div style={{ background: "#111827", border: "1px solid #1f2937", borderRadius: "10px", padding: "20px" }}>
-        <h2 style={{ fontSize: "16px", fontWeight: "bold", marginBottom: "16px" }}>體重趨勢</h2>
+        <h2 style={{ fontSize: "16px", fontWeight: "bold", marginBottom: "16px" ,color:"white"}}>體重趨勢</h2>
         <div style={{ height: "250px" }}>
           <Line
             data={{
@@ -307,6 +427,9 @@ return (
         </div>
       </div>
     )}
+    </div>
+    
+ 
   </div>
 )
 
