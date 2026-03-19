@@ -7,6 +7,7 @@ import Link from "next/link"
 export default function EditVaccinePage({ params }: { params: Promise<{ id: string; vaccineId: string }> }) {
   const router = useRouter()
   const [id, setId] = useState("")
+  const [petName, setPetName] = useState("");
   const [vaccineId, setVaccineId] = useState("")
   const [vaccineName, setVaccineName] = useState("")
   const [date, setDate] = useState("")
@@ -27,6 +28,9 @@ export default function EditVaccinePage({ params }: { params: Promise<{ id: stri
 
   useEffect(() => {
     if (!id || !vaccineId) return
+    fetch(`/api/pets/${id}`, { credentials: "include" })
+      .then((res) => res.json())
+      .then((data) => setPetName(data.name))
     fetch(`/api/pets/${id}/vaccines`, { credentials: "include" })
       .then((res) => res.json())
       .then((data) => {
@@ -71,6 +75,38 @@ export default function EditVaccinePage({ params }: { params: Promise<{ id: stri
   }
 
   return (
+    <>
+    {/*麵包屑 */}
+      <div
+        style={{
+          display: "flex",
+          gap: "8px",
+          alignItems: "center",
+          marginBottom: "16px",
+          fontSize: "14px",
+          color: "#9ca3af",
+        }}
+      >
+        <Link href="/pets" style={{ color: "#9ca3af", textDecoration: "none" }}>
+          My Pets
+        </Link>
+        <span>›</span>
+        <Link
+          href={`/pets/${id}`}
+          style={{ color: "#9ca3af", textDecoration: "none" }}
+        >
+          {petName}
+        </Link>
+        <span>›</span>
+        <Link
+          href={`/pets/${id}/vaccines`}
+          style={{ color: "#9ca3af", textDecoration: "none" }}
+        >
+          Vaccines
+        </Link>
+        <span>›</span>
+        <span style={{ color: "#f3f4f6" }}>Edit</span>
+      </div>
     <div style={{ padding: "24px", maxWidth: "400px", margin: "0 auto" }}>
       <h1 style={{ fontSize: "24px", fontWeight: "bold", marginBottom: "24px" }}>Edit Vaccine Record</h1>
       {currentPhotoUrl && <img src={currentPhotoUrl} alt="current photo" style={{ width: "100px", height: "100px", objectFit: "cover", borderRadius: "8px", marginBottom: "12px" }} />}
@@ -86,7 +122,7 @@ export default function EditVaccinePage({ params }: { params: Promise<{ id: stri
         <input type="file" accept="image/jpeg,image/png" onChange={(e) => setPhoto(e.target.files?.[0] || null)} style={{ color: "white" }} />
         {error && <p style={{ color: "#dc2626" }}>{error}</p>}
          <div style={{ display: "flex", gap: "12px", marginTop: "24px" }}>
-          <Link href={`/pets/${id}`} style={{ flex: 1, background: "#1f2937", color: "white", padding: "10px", borderRadius: "6px", border: "1px solid #374151", cursor: "pointer", textDecoration: "none", textAlign: "center", fontSize: "14px" }}>
+          <Link href={`/pets/${id}/vaccines`} style={{ flex: 1, background: "#1f2937", color: "white", padding: "10px", borderRadius: "6px", border: "1px solid #374151", cursor: "pointer", textDecoration: "none", textAlign: "center", fontSize: "14px" }}>
             Cancel
           </Link>
           <button type="submit" style={{ flex: 1, background: "#4b5563", color: "white", padding: "10px", borderRadius: "6px", border: "none", cursor: "pointer", fontSize: "14px" }}>
@@ -96,5 +132,6 @@ export default function EditVaccinePage({ params }: { params: Promise<{ id: stri
         
       </form>
     </div>
+    </>
   )
 }

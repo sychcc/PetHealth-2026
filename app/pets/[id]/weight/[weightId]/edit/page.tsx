@@ -2,10 +2,12 @@
 
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
+import Link from "next/link"
 
 export default function EditWeightPage({ params }: { params: Promise<{ id: string; weightId: string }> }) {
   const router = useRouter()
   const [id, setId] = useState("")
+  const [petName, setPetName] = useState("")
   const [weightId, setWeightId] = useState("")
   const [weight, setWeight] = useState("")
   const [unit,setUnit]=useState("kg")
@@ -19,6 +21,12 @@ export default function EditWeightPage({ params }: { params: Promise<{ id: strin
       setWeightId(w.weightId)
     })
   }, [])
+  useEffect(()=>{
+    if(!id) return
+    fetch(`/api/pets/${id}`, { credentials: "include" })
+      .then((res) => res.json())
+      .then((data) => setPetName(data.name))
+  },[id])
 
   useEffect(() => {
     if (!id || !weightId) return
@@ -60,6 +68,38 @@ export default function EditWeightPage({ params }: { params: Promise<{ id: strin
   }
 
   return (
+    <>
+    {/*麵包屑 */}
+      <div
+        style={{
+          display: "flex",
+          gap: "8px",
+          alignItems: "center",
+          marginBottom: "16px",
+          fontSize: "14px",
+          color: "#9ca3af",
+        }}
+      >
+        <Link href="/pets" style={{ color: "#9ca3af", textDecoration: "none" }}>
+          My Pets
+        </Link>
+        <span>›</span>
+        <Link
+          href={`/pets/${id}`}
+          style={{ color: "#9ca3af", textDecoration: "none" }}
+        >
+          {petName}
+        </Link>
+        <span>›</span>
+        <Link
+          href={`/pets/${id}/weight`}
+          style={{ color: "#9ca3af", textDecoration: "none" }}
+        >
+          Weight
+        </Link>
+        <span>›</span>
+        <span style={{ color: "#f3f4f6" }}>Edit</span>
+      </div>
     <div style={{ padding: "24px", maxWidth: "400px", margin: "0 auto" }}>
       <h1 style={{ fontSize: "24px", fontWeight: "bold", marginBottom: "24px" }}>Edit Weight Record</h1>
       <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
@@ -77,8 +117,17 @@ export default function EditWeightPage({ params }: { params: Promise<{ id: strin
         <input type="date" value={date} onChange={(e) => setDate(e.target.value)} style={{ padding: "8px", borderRadius: "6px", border: "1px solid #374151", background: "#1f2937", color: "white" }} />
         <label style={{ color: "#9ca3af", fontSize: "14px" }}>備註</label>
         <input type="text" value={notes} onChange={(e) => setNotes(e.target.value)} style={{ padding: "8px", borderRadius: "6px", border: "1px solid #374151", background: "#1f2937", color: "white" }} />
-        <button type="submit" style={{ background: "#4b5563", color: "white", padding: "10px", borderRadius: "6px", border: "none", cursor: "pointer" }}>Save</button>
+        {error && <p style={{ color: "#dc2626" }}>{error}</p>}
+         <div style={{ display: "flex", gap: "12px", marginTop: "24px" }}>
+          <Link href={`/pets/${id}/weight`} style={{ flex: 1, background: "#1f2937", color: "white", padding: "10px", borderRadius: "6px", border: "1px solid #374151", cursor: "pointer", textDecoration: "none", textAlign: "center", fontSize: "14px" }}>
+            Cancel
+          </Link>
+          <button type="submit" style={{ flex: 1, background: "#4b5563", color: "white", padding: "10px", borderRadius: "6px", border: "none", cursor: "pointer", fontSize: "14px" }}>
+            Save
+          </button>
+        </div>
       </form>
     </div>
+    </>
   )
 }

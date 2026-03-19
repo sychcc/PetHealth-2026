@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
+import Link from "next/link";
 
 type Pet = {
   id: string
@@ -88,6 +89,31 @@ export default function EditPetPage({ params }: { params: Promise<{ id: string }
   }
 
   return (
+  <>
+      {/*麵包屑 */}
+      <div
+        style={{
+          display: "flex",
+          gap: "8px",
+          alignItems: "center",
+          marginBottom: "16px",
+          fontSize: "14px",
+          color: "#9ca3af",
+        }}
+      >
+        <Link href="/pets" style={{ color: "#9ca3af", textDecoration: "none" }}>
+          My Pets
+        </Link>
+        <span>›</span>
+        <Link
+          href={`/pets/${id}`}
+          style={{ color: "#9ca3af", textDecoration: "none" }}
+        >
+          {name}
+        </Link>
+        <span>›</span>
+        <span style={{ color: "#f3f4f6" }}>Edit</span>
+      </div>
   <div style={{ maxWidth: "400px", margin: "40px auto", padding: "0 24px" }}>
     <h1 style={{ fontSize: "22px", fontWeight: "bold", marginBottom: "24px" }}>Edit Pet</h1>
 
@@ -120,67 +146,16 @@ export default function EditPetPage({ params }: { params: Promise<{ id: string }
 
       {error && <p style={{ color: "#ef4444", fontSize: "14px", margin: 0 }}>{error}</p>}
 
-      <div style={{ display: "flex", gap: "8px", marginTop: "8px" }}>
-        <button type="submit" style={{ flex: 1, background: "#4b5563", color: "white", padding: "10px", borderRadius: "8px", border: "none", cursor: "pointer", fontSize: "14px" }}>
-          Save
-        </button>
-        <button type="button" onClick={() => router.push(`/pets/${id}`)}
-          style={{ flex: 1, background: "#1f2937", color: "white", padding: "10px", borderRadius: "8px", border: "1px solid #374151", cursor: "pointer", fontSize: "14px" }}>
-          Cancel
-        </button>
-      </div>
+      <div style={{ display: "flex", gap: "12px", marginTop: "24px" }}>
+          <Link href={`/pets/${id}/medical`} style={{ flex: 1, background: "#1f2937", color: "white", padding: "10px", borderRadius: "6px", border: "1px solid #374151", cursor: "pointer", textDecoration: "none", textAlign: "center", fontSize: "14px" }}>
+            Cancel
+          </Link>
+          <button type="submit" style={{ flex: 1, background: "#4b5563", color: "white", padding: "10px", borderRadius: "6px", border: "none", cursor: "pointer", fontSize: "14px" }}>
+            Save
+          </button>
+        </div>
     </form>
   </div>
+  </>
 )
-
-  // return (
-  //   <div>
-  //     <h1>Edit Pet Page</h1>
-  //     {currentPhotoUrl && (
-  //       <img src={currentPhotoUrl} alt="current photo" width={100} height={100} style={{ objectFit: "cover" }} />
-  //     )}
-  //     <form onSubmit={handleSubmit}>
-  //       <input
-  //         type="text"
-  //         placeholder="Pet name"
-  //         value={name}
-  //         onChange={(e) => setName(e.target.value)}
-  //       />
-  //       <input
-  //         type="text"
-  //         placeholder="Species"
-  //         value={species}
-  //         onChange={(e) => setSpecies(e.target.value)}
-  //       />
-  //       <input
-  //         type="date"
-  //         value={birthdate}
-  //         onChange={(e) => setBirthdate(e.target.value)}
-  //       />
-  //       <input
-  //         type="text"
-  //         placeholder="Chip number (optional)"
-  //         value={chipNumber}
-  //         onChange={(e) => setChipNumber(e.target.value)}
-  //       />
-  //        <input
-  //         type="number"
-  //         placeholder="Target weight (optional)"
-  //         value={tWeight}
-  //         onChange={(e) => setTweight(e.target.value)}
-  //       />
-  //       <select value={unit} onChange={(e)=>setUnit(e.target.value)} style={{padding: "8px", borderRadius: "6px", border: "1px solid #374151", background: "#1f2937", color: "white"}}>
-  //           <option value="kg">kg</option>
-  //           <option value="lbs">lbs</option>
-  //         </select>
-  //       <input
-  //         type="file"
-  //         accept="image/jpeg,image/png"
-  //         onChange={(e) => setPhoto(e.target.files?.[0] || null)}
-  //       />
-  //       {error && <p>{error}</p>}
-  //       <button type="submit" style={{ background: "#4b5563", color: "white", padding: "10px", borderRadius: "6px", border: "none", cursor: "pointer" }}>Save</button>
-  //     </form>
-  //   </div>
-  // )
 }
