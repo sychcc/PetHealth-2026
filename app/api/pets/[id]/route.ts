@@ -58,11 +58,11 @@ export async function PUT(
     return NextResponse.json({ error: "無權限" }, { status: 403 })
   }
 
-  const { name, species,target_weight, birthdate, chip_number, photo_url } = await req.json()
+  const { name, species,breed,target_weight, birthdate, chip_number, photo_url } = await req.json()
 
   const updated = await prisma.pet.update({
     where: { id: BigInt(id) },
-    data: { name, species, birthdate: new Date(birthdate), chip_number, target_weight,photo_url },
+    data: { name, species,breed, birthdate: new Date(birthdate), chip_number, target_weight,photo_url },
   })
 
   return NextResponse.json({ ...updated, id: String(updated.id), user_id: String(updated.user_id) })
