@@ -29,6 +29,25 @@ export async function GET(
   if (pet.user_id !== user!.id)
     return NextResponse.json({ error: "無權限" }, { status: 403 });
 
+  //判斷是否要強制重新分析
+  const refresh = req.nextUrl.searchParams.get("refresh") === "true";
+
+  //判斷資料庫有沒有舊的auto分析
+  if (!refresh) {
+    const existing = await prisma.aiAnalysis.findFirst({
+      where: { pet_id: BigInt(id), type: "auto" },
+      orderBy: { created_at: "desc" },
+    });
+    if (existing) {
+      const cached = JSON.parse(existing.result as string);
+      return NextResponse.json({
+        ...cached,
+        cached: true,
+        created_at: existing.created_at,
+      });
+    }
+  }
+
   //2. 拿資料
   const weights = await prisma.weightRecord.findMany({
     where: { pet_id: BigInt(id) },
@@ -52,6 +71,11 @@ export async function GET(
     where: { pet_id: BigInt(id) },
   });
 
+  //如果沒有任何健康資料就不呼叫gemini
+  if(weights.length===0&&vaccines.length===0&&medicals.length===0){
+    return NextResponse.json({summary:null,full_report:null})
+  }
+
   // 整理prompt
 
   const prompt = `你是一個專業的寵物健康分析師，請用繁體中文分析以下寵物的健康狀況。
@@ -65,7 +89,7 @@ export async function GET(
 ${
   weights.length > 0
     ? weights
-        .map((w) => `-${w.date.toISOString().split("T")[0]}:${w.weight}kg`)
+        .map((w) => `-${w.date ? new Date(w.date).toISOString().split("T")[0] : "未知日期"}:${w.weight}kg`)
         .join("\n")
     : "無紀錄"
 }
@@ -77,7 +101,7 @@ ${
     ? medicals
         .map(
           (m) =>
-            `-${m.date.toISOString().split("T")[0]}:${m.brief_name},${m.symptoms || "無症狀記錄"},${m.diagnosis || "無診斷記錄"},${m.prescription || "無處方籤記錄"}${m.photo_url || "無提供照片"}`,
+            `-${m.date ? new Date(m.date).toISOString().split("T")[0] : "未知日期"}:${m.brief_name},${m.symptoms || "無症狀記錄"},${m.diagnosis || "無診斷記錄"},${m.prescription || "無處方籤記錄"}${m.photo_url || "無提供照片"}`,
         )
         .join("\n")
     : "無紀錄"
@@ -89,7 +113,7 @@ ${
     ? vaccines
         .map(
           (v) =>
-            `- ${v.vaccine_name}：${v.date.toISOString().split("T")[0]}，下次到期：${v.next_due_date ? v.next_due_date.toISOString().split("T")[0] : "未設定"}`,
+            `- ${v.vaccine_name}：${v.date ? new Date(v.date).toISOString().split("T")[0] : "未知日期"}，下次到期：${v.next_due_date ? new Date(v.next_due_date).toISOString().split("T")[0] : "未設定"}`,
         )
         .join("\n")
     : "無紀錄"
@@ -130,6 +154,16 @@ ${checklistItems
   // 5. 解析 JSON
   const clean = text.replace(/```json|```/g, "").trim();
   const analysis = JSON.parse(clean);
+
+  // 6.存資料庫
+  await prisma.aiAnalysis.create({
+    data: {
+      pet_id: BigInt(id),
+      type: "auto",
+      input_data: prompt,
+      result: JSON.stringify(analysis),
+    },
+  });
 
   return NextResponse.json(analysis);
 }

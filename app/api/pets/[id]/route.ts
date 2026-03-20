@@ -98,6 +98,7 @@ export async function DELETE(
   await prisma.medicalRecord.deleteMany({ where: { pet_id: BigInt(id) } })
   await prisma.reminder.deleteMany({ where: { pet_id: BigInt(id) } })
   await prisma.aiAnalysis.deleteMany({ where: { pet_id: BigInt(id) } })
+  await prisma.petChecklistItem.deleteMany({ where: { pet_id: BigInt(id) } })
 
   await prisma.pet.delete({
     where: { id: BigInt(id) },

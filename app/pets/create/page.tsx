@@ -1,49 +1,56 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { useRouter } from "next/navigation"
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 export default function CreatePetPage() {
-  const router = useRouter()
-  const [name, setName] = useState("")
-  const [species, setSpecies] = useState("")
-  const [birthdate, setBirthdate] = useState("")
-  const [chipNumber, setChipNumber] = useState("")
-  const [photo, setPhoto] = useState<File | null>(null)
-  const [error, setError] = useState("")
+  const router = useRouter();
+  const [name, setName] = useState("");
+  const [species, setSpecies] = useState("");
+  const [breed, setBreed] = useState("");
+  const [birthdate, setBirthdate] = useState("");
+  const [chipNumber, setChipNumber] = useState("");
+  const [photo, setPhoto] = useState<File | null>(null);
+  const [error, setError] = useState("");
 
   async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
+    e.preventDefault();
 
-    let photo_url = null
+    let photo_url = null;
 
     if (photo) {
-      const formData = new FormData()
-      formData.append("file", photo)
+      const formData = new FormData();
+      formData.append("file", photo);
       const uploadRes = await fetch("/api/upload", {
         method: "POST",
         body: formData,
-      })
-      const uploadData = await uploadRes.json()
+      });
+      const uploadData = await uploadRes.json();
       if (!uploadRes.ok) {
-        setError(uploadData.error)
-        return
+        setError(uploadData.error);
+        return;
       }
-      photo_url = uploadData.url
+      photo_url = uploadData.url;
     }
 
     const res = await fetch("/api/pets", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, species, birthdate, chip_number: chipNumber, photo_url }),
-    })
+      body: JSON.stringify({
+        name,
+        species,
+        birthdate,
+        chip_number: chipNumber,
+        photo_url,
+      }),
+    });
 
-    const data = await res.json()
+    const data = await res.json();
 
     if (!res.ok) {
-      setError(data.error)
+      setError(data.error);
     } else {
-      router.push("/pets")
+      router.push("/pets");
     }
   }
 
@@ -57,11 +64,17 @@ export default function CreatePetPage() {
           value={name}
           onChange={(e) => setName(e.target.value)}
         />
+        <select value={species} onChange={(e) => setSpecies(e.target.value)}>
+          <option value="">Select species</option>
+          <option value="Dog">Dog</option>
+          <option value="Cat">Cat</option>
+        </select>
+
         <input
           type="text"
-          placeholder="Species"
-          value={species}
-          onChange={(e) => setSpecies(e.target.value)}
+          placeholder="Breed(Optional)"
+          value={breed}
+          onChange={(e) => setBreed(e.target.value)}
         />
         <input
           type="date"
@@ -83,5 +96,5 @@ export default function CreatePetPage() {
         <button type="submit">Add Pet</button>
       </form>
     </div>
-  )
+  );
 }

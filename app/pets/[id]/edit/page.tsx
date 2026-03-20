@@ -44,7 +44,7 @@ export default function EditPetPage({
       .then((data: Pet) => {
         setName(data.name);
         setSpecies(data.species);
-        setBreed(data.breed||"");
+        setBreed(data.breed || "");
         setBirthdate(data.birthdate.split("T")[0]);
         setChipNumber(data.chip_number || "");
         setCurrentPhotoUrl(data.photo_url);
@@ -169,20 +169,36 @@ export default function EditPetPage({
               fontSize: "14px",
             }}
           />
-          <select value={species} onChange={(e)=>setSpecies(e.target.value)} style={{ padding: "10px 12px", borderRadius: "8px", border: "1px solid #374151", background: "#1f2937", color: "white", fontSize: "14px" }}>
-            <option value="">Select species</option>
-            <option value="Dog">Dog</option>
-            <option value="Cat">Cat</option>
-            <option value="Other">Other</option>
-          </select>
-          <input type="text" placeholder="Breed(Optional)" value={breed} onChange={(e)=>setBreed(e.target.value)} style={{
+          <select
+            value={species}
+            onChange={(e) => setSpecies(e.target.value)}
+            style={{
               padding: "10px 12px",
               borderRadius: "8px",
               border: "1px solid #374151",
               background: "#1f2937",
               color: "white",
               fontSize: "14px",
-            }} />
+            }}
+          >
+            <option value="">Select species</option>
+            <option value="Dog">Dog</option>
+            <option value="Cat">Cat</option>
+          </select>
+          <input
+            type="text"
+            placeholder="Breed(Optional)"
+            value={breed}
+            onChange={(e) => setBreed(e.target.value)}
+            style={{
+              padding: "10px 12px",
+              borderRadius: "8px",
+              border: "1px solid #374151",
+              background: "#1f2937",
+              color: "white",
+              fontSize: "14px",
+            }}
+          />
           <input
             type="date"
             value={birthdate}

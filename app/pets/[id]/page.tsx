@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Line, Pie } from "react-chartjs-2";
-import jsPDF from "jspdf";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -32,6 +31,7 @@ type Pet = {
   id: string;
   name: string;
   species: string;
+  breed: string | null;
   birthdate: string;
   chip_number: string | null;
   target_weight: number | null;
@@ -90,6 +90,13 @@ export default function PetDetailPage({
   const [fullReport, setFullReport] = useState("");
   const [showFull, setShowFull] = useState(false);
   const [loadingAi, setLoadingAi] = useState(false);
+  const [analysisCreatedAt, setAnalysisCreatedAt] = useState<string | null>(
+    null,
+  );
+  // for ai-chat
+  const [chatQuestion, setChatQuestion] = useState("");
+  const [chatAnswer, setChatAnswer] = useState("");
+  const [loadingChat, setLoadingChat] = useState(false);
   // for checklist
   const [checklist, setCheckList] = useState<ChecklistItem[]>([]);
 
@@ -130,6 +137,8 @@ export default function PetDetailPage({
         .then((res) => res.json())
         .then((data) => setCheckList(data));
     });
+    //自動Load ai分析
+    loadAiSummary();
   }, [id]);
 
   async function handleDelete() {
@@ -163,17 +172,46 @@ export default function PetDetailPage({
     }
   }
 
-  //ai-summay
-  async function handleAiSummary() {
+  //ai-summay 有兩個function
+  //1. 頁面載入時自動打（不帶fresh)
+  async function loadAiSummary() {
     setLoadingAi(true);
     fetch(`/api/pets/${id}/ai-summary`, { credentials: "include" })
       .then((res) => res.json())
       .then((data) => {
         setSummary(data.summary);
         setFullReport(data.full_report);
+        setAnalysisCreatedAt(data.created_at || null);
         setLoadingAi(false);
       });
   }
+  //2.使用者點重新分析（帶fresh=true)
+  async function handleRefreshAi() {
+    setLoadingAi(true);
+    fetch(`/api/pets/${id}/ai-summary?refresh=true`, { credentials: "include" })
+      .then((res) => res.json())
+      .then((data) => {
+        setSummary(data.summary);
+        setFullReport(data.full_report);
+        setAnalysisCreatedAt(data.created_at || null);
+        setLoadingAi(false);
+      });
+  }
+  //for ai-chat
+  async function handleChat() {
+    if (!chatQuestion.trim()) return;
+    setLoadingChat(true);
+    const res = await fetch(`/api/pets/${id}/ai-chat`, {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ question: chatQuestion }),
+    });
+    const data = await res.json();
+    setChatAnswer(data.answer);
+    setLoadingChat(false);
+  }
+
   // pdf
   async function handleDownloadPdf() {
     window.print();
@@ -189,34 +227,6 @@ export default function PetDetailPage({
       today.getDate() >= birthday.getDate());
   if (!hasBirthdayPassed) {
     age -= 1;
-  }
-
-  function getZodiac() {
-    const month = birthday.getMonth() + 1;
-    const date = birthday.getDate();
-    if ((month === 3 && date >= 21) || (month === 4 && date <= 19))
-      return "♈ 牡羊座";
-    if ((month === 4 && date >= 20) || (month === 5 && date <= 20))
-      return "♉ 金牛座";
-    if ((month === 5 && date >= 21) || (month === 6 && date <= 20))
-      return "♊ 雙子座";
-    if ((month === 6 && date >= 21) || (month === 7 && date <= 22))
-      return "♋ 巨蟹座";
-    if ((month === 7 && date >= 23) || (month === 8 && date <= 22))
-      return "♌ 獅子座";
-    if ((month === 8 && date >= 23) || (month === 9 && date <= 22))
-      return "♍ 處女座";
-    if ((month === 9 && date >= 23) || (month === 10 && date <= 22))
-      return "♎ 天秤座";
-    if ((month === 10 && date >= 23) || (month === 11 && date <= 21))
-      return "♏ 天蠍座";
-    if ((month === 11 && date >= 22) || (month === 12 && date <= 21))
-      return "♐ 射手座";
-    if ((month === 12 && date >= 22) || (month === 1 && date <= 19))
-      return "♑ 摩羯座";
-    if ((month === 1 && date >= 20) || (month === 2 && date <= 18))
-      return "♒ 水瓶座";
-    return "♓ 雙魚座";
   }
 
   return (
@@ -269,10 +279,11 @@ export default function PetDetailPage({
           >
             {pet.name}
           </h1>
-          <p style={{ color: "#9ca3af", margin: "4px 0" }}>我是{pet.species}</p>
           <p style={{ color: "#9ca3af", margin: "4px 0" }}>
-            {new Date(pet.birthdate).toLocaleDateString()} · {getZodiac()} ·{" "}
-            {age} years old
+            {pet.species}·{pet.breed}
+          </p>
+          <p style={{ color: "#9ca3af", margin: "4px 0" }}>
+            {new Date(pet.birthdate).toLocaleDateString()} · {age} years old
           </p>
           {pet.chip_number && (
             <p style={{ color: "#9ca3af", margin: "4px 0" }}>
@@ -371,7 +382,8 @@ export default function PetDetailPage({
         medicalRecords.length === 0 &&
         vaccineRecords.length === 0 && (
           <p style={{ color: "#6b7280", textAlign: "center", padding: "24px" }}>
-            目前還沒有健康資料，先去新增寵物的健康紀錄吧！
+            Looks like there's no data. Add your pet's first health record to
+            get started!
           </p>
         )}
 
@@ -608,8 +620,74 @@ export default function PetDetailPage({
               </div>
             </div>
           )}
+          {/* AI 對話 */}
+          <div
+            style={{
+              marginBottom: "24px",
+              background: "#1f2937",
+              borderRadius: "10px",
+              padding: "20px",
+            }}
+          >
+            <h2
+              style={{
+                fontSize: "16px",
+                fontWeight: "bold",
+                marginBottom: "16px",
+              }}
+            >
+              詢問 AI 助理
+            </h2>
+            <div style={{ display: "flex", gap: "8px", marginBottom: "16px" }}>
+              <input
+                type="text"
+                value={chatQuestion}
+                onChange={(e) => setChatQuestion(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleChat()}
+                placeholder={`問關於 ${pet.name} 的健康問題...`}
+                style={{
+                  flex: 1,
+                  padding: "10px 14px",
+                  borderRadius: "8px",
+                  border: "1px solid #374151",
+                  background: "#111827",
+                  color: "white",
+                  fontSize: "14px",
+                }}
+              />
+              <button
+                onClick={handleChat}
+                disabled={loadingChat || !chatQuestion.trim()}
+                style={{
+                  background: "#4b5563",
+                  color: "white",
+                  padding: "10px 20px",
+                  borderRadius: "8px",
+                  border: "none",
+                  cursor: "pointer",
+                  fontSize: "14px",
+                }}
+              >
+                {loadingChat ? "思考中..." : "送出"}
+              </button>
+            </div>
+            {chatAnswer && (
+              <div
+                style={{
+                  background: "#111827",
+                  borderRadius: "8px",
+                  padding: "16px",
+                }}
+              >
+                <p style={{ color: "#d1d5db", lineHeight: "1.8", margin: 0 }}>
+                  {chatAnswer}
+                </p>
+              </div>
+            )}
+          </div>
+
           <button
-            onClick={handleAiSummary}
+            onClick={handleRefreshAi}
             disabled={loadingAi}
             style={{
               background: "#4b5563",
@@ -621,8 +699,13 @@ export default function PetDetailPage({
               fontSize: "14px",
             }}
           >
-            {loadingAi ? "分析中..." : "取得 AI 健康分析"}
+            {loadingAi ? "分析中..." : "重新分析AI健康"}
           </button>
+          {analysisCreatedAt && (
+            <span style={{ fontSize: "13px", color: "#9ca3af" }}>
+              上次分析：{new Date(analysisCreatedAt).toLocaleDateString()}
+            </span>
+          )}
         </div>
       )}
       {/* 寵物健康報告 */}
@@ -636,10 +719,10 @@ export default function PetDetailPage({
         }}
       >
         <h2 style={{ color: "#000", marginBottom: "4px" }}>
-          {pet.name} 的健康報告
+          {pet.name}'s Heath Dashboard
         </h2>
         <p style={{ color: "#555", fontSize: "13px", marginBottom: "16px" }}>
-          生成日期：{new Date().toLocaleDateString()}
+          Created At：{new Date().toLocaleDateString()}
         </p>
 
         {/* 寵物基本資料 */}
@@ -651,14 +734,20 @@ export default function PetDetailPage({
           }}
         >
           <p style={{ color: "#333", fontSize: "13px", margin: "4px 0" }}>
-            名字：{pet.name}
+            Name：{pet.name}
           </p>
           <p style={{ color: "#333", fontSize: "13px", margin: "4px 0" }}>
-            品種：{pet.species}
+            Species：{pet.species}
           </p>
+          {pet.breed && (
+            <p style={{ color: "#333", fontSize: "13px", margin: "4px 0" }}>
+              Breed：{pet.breed}
+            </p>
+          )}
+
           <p style={{ color: "#333", fontSize: "13px", margin: "4px 0" }}>
-            生日：{new Date(pet.birthdate).toLocaleDateString()} · {getZodiac()}{" "}
-            · {age} years old
+            Birthday：{new Date(pet.birthdate).toLocaleDateString()} · {age}{" "}
+            years old
           </p>
           {pet.chip_number && (
             <p style={{ color: "#333", fontSize: "13px", margin: "4px 0" }}>
@@ -785,176 +874,179 @@ export default function PetDetailPage({
         )}
         {/* 必做事項完成率圓餅圖 */}
 
-        {checklist.length > 0 && (
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "1fr 1fr",
-              gap: "16px",
-              marginBottom: "16px",
-            }}
-          >
-            {/* 一次性完成率 */}
+        {checklist.length > 0 &&
+          (weightRecords.length > 0 ||
+            medicalRecords.length > 0 ||
+            vaccineRecords.length > 0) && (
             <div
               style={{
-                background: "#1f2937",
-                borderRadius: "10px",
-                padding: "16px",
-                textAlign: "center",
+                display: "grid",
+                gridTemplateColumns: "1fr 1fr",
+                gap: "16px",
+                marginBottom: "16px",
               }}
             >
-              <p
+              {/* 一次性完成率 */}
+              <div
                 style={{
-                  fontSize: "13px",
-                  color: "#9ca3af",
-                  margin: "0 0 12px",
+                  background: "#1f2937",
+                  borderRadius: "10px",
+                  padding: "16px",
+                  textAlign: "center",
                 }}
               >
-                一次性完成率
-              </p>
-              <div style={{ height: "160px" }}>
-                <Pie
-                  data={{
-                    datasets: [
-                      {
-                        data: [
-                          checklist.filter(
-                            (i) => i.type === "one_time" && i.is_completed,
-                          ).length,
-                          checklist.filter(
-                            (i) => i.type === "one_time" && !i.is_completed,
-                          ).length,
-                        ],
-                        backgroundColor: ["#3dbfa0", "#374151"],
-                        borderWidth: 0,
+                <p
+                  style={{
+                    fontSize: "13px",
+                    color: "#9ca3af",
+                    margin: "0 0 12px",
+                  }}
+                >
+                  一次性完成率
+                </p>
+                <div style={{ height: "160px" }}>
+                  <Pie
+                    data={{
+                      datasets: [
+                        {
+                          data: [
+                            checklist.filter(
+                              (i) => i.type === "one_time" && i.is_completed,
+                            ).length,
+                            checklist.filter(
+                              (i) => i.type === "one_time" && !i.is_completed,
+                            ).length,
+                          ],
+                          backgroundColor: ["#3dbfa0", "#374151"],
+                          borderWidth: 0,
+                        },
+                      ],
+                    }}
+                    options={{
+                      plugins: {
+                        legend: { display: false },
+                        tooltip: { enabled: false },
                       },
-                    ],
+                    }}
+                  />
+                </div>
+                <p
+                  style={{
+                    fontSize: "20px",
+                    fontWeight: "bold",
+                    margin: "12px 0 4px",
+                    color: "black",
                   }}
-                  options={{
-                    plugins: {
-                      legend: { display: false },
-                      tooltip: { enabled: false },
-                    },
-                  }}
-                />
+                >
+                  {Math.round(
+                    (checklist.filter(
+                      (i) => i.type === "one_time" && i.is_completed,
+                    ).length /
+                      checklist.filter((i) => i.type === "one_time").length) *
+                      100,
+                  )}
+                  %
+                </p>
+                <p style={{ fontSize: "12px", color: "#6b7280", margin: 0 }}>
+                  {
+                    checklist.filter(
+                      (i) => i.type === "one_time" && i.is_completed,
+                    ).length
+                  }{" "}
+                  / {checklist.filter((i) => i.type === "one_time").length} 完成
+                </p>
               </div>
-              <p
-                style={{
-                  fontSize: "20px",
-                  fontWeight: "bold",
-                  margin: "12px 0 4px",
-                  color: "black",
-                }}
-              >
-                {Math.round(
-                  (checklist.filter(
-                    (i) => i.type === "one_time" && i.is_completed,
-                  ).length /
-                    checklist.filter((i) => i.type === "one_time").length) *
-                    100,
-                )}
-                %
-              </p>
-              <p style={{ fontSize: "12px", color: "#6b7280", margin: 0 }}>
-                {
-                  checklist.filter(
-                    (i) => i.type === "one_time" && i.is_completed,
-                  ).length
-                }{" "}
-                / {checklist.filter((i) => i.type === "one_time").length} 完成
-              </p>
-            </div>
 
-            {/* 今年定期完成率 */}
-            <div
-              style={{
-                background: "#1f2937",
-                borderRadius: "10px",
-                padding: "16px",
-                textAlign: "center",
-              }}
-            >
-              <p
+              {/* 今年定期完成率 */}
+              <div
                 style={{
-                  fontSize: "13px",
-                  color: "#9ca3af",
-                  margin: "0 0 12px",
+                  background: "#1f2937",
+                  borderRadius: "10px",
+                  padding: "16px",
+                  textAlign: "center",
                 }}
               >
-                今年定期完成率
-              </p>
-              <div style={{ height: "160px" }}>
-                <Pie
-                  data={{
-                    datasets: [
-                      {
-                        data: [
-                          checklist.filter(
-                            (i) =>
-                              i.type === "annual" &&
-                              i.completed_at &&
-                              new Date(i.completed_at).getFullYear() ===
-                                new Date().getFullYear(),
-                          ).length,
-                          checklist.filter(
-                            (i) =>
-                              i.type === "annual" &&
-                              !(
+                <p
+                  style={{
+                    fontSize: "13px",
+                    color: "#9ca3af",
+                    margin: "0 0 12px",
+                  }}
+                >
+                  今年定期完成率
+                </p>
+                <div style={{ height: "160px" }}>
+                  <Pie
+                    data={{
+                      datasets: [
+                        {
+                          data: [
+                            checklist.filter(
+                              (i) =>
+                                i.type === "annual" &&
                                 i.completed_at &&
                                 new Date(i.completed_at).getFullYear() ===
-                                  new Date().getFullYear()
-                              ),
-                          ).length,
-                        ],
-                        backgroundColor: ["#3dbfa0", "#374151"],
-                        borderWidth: 0,
+                                  new Date().getFullYear(),
+                            ).length,
+                            checklist.filter(
+                              (i) =>
+                                i.type === "annual" &&
+                                !(
+                                  i.completed_at &&
+                                  new Date(i.completed_at).getFullYear() ===
+                                    new Date().getFullYear()
+                                ),
+                            ).length,
+                          ],
+                          backgroundColor: ["#3dbfa0", "#374151"],
+                          borderWidth: 0,
+                        },
+                      ],
+                    }}
+                    options={{
+                      plugins: {
+                        legend: { display: false },
+                        tooltip: { enabled: false },
                       },
-                    ],
+                    }}
+                  />
+                </div>
+                <p
+                  style={{
+                    fontSize: "20px",
+                    fontWeight: "bold",
+                    margin: "12px 0 4px",
+                    color: "black",
                   }}
-                  options={{
-                    plugins: {
-                      legend: { display: false },
-                      tooltip: { enabled: false },
-                    },
-                  }}
-                />
+                >
+                  {Math.round(
+                    (checklist.filter(
+                      (i) =>
+                        i.type === "annual" &&
+                        i.completed_at &&
+                        new Date(i.completed_at).getFullYear() ===
+                          new Date().getFullYear(),
+                    ).length /
+                      checklist.filter((i) => i.type === "annual").length) *
+                      100,
+                  )}
+                  %
+                </p>
+                <p style={{ fontSize: "12px", color: "#6b7280", margin: 0 }}>
+                  {
+                    checklist.filter(
+                      (i) =>
+                        i.type === "annual" &&
+                        i.completed_at &&
+                        new Date(i.completed_at).getFullYear() ===
+                          new Date().getFullYear(),
+                    ).length
+                  }{" "}
+                  / {checklist.filter((i) => i.type === "annual").length} 完成
+                </p>
               </div>
-              <p
-                style={{
-                  fontSize: "20px",
-                  fontWeight: "bold",
-                  margin: "12px 0 4px",
-                  color: "black",
-                }}
-              >
-                {Math.round(
-                  (checklist.filter(
-                    (i) =>
-                      i.type === "annual" &&
-                      i.completed_at &&
-                      new Date(i.completed_at).getFullYear() ===
-                        new Date().getFullYear(),
-                  ).length /
-                    checklist.filter((i) => i.type === "annual").length) *
-                    100,
-                )}
-                %
-              </p>
-              <p style={{ fontSize: "12px", color: "#6b7280", margin: 0 }}>
-                {
-                  checklist.filter(
-                    (i) =>
-                      i.type === "annual" &&
-                      i.completed_at &&
-                      new Date(i.completed_at).getFullYear() ===
-                        new Date().getFullYear(),
-                  ).length
-                }{" "}
-                / {checklist.filter((i) => i.type === "annual").length} 完成
-              </p>
             </div>
-          </div>
-        )}
+          )}
 
         {/*體重趨勢圖 */}
         {weightRecords.length > 0 && (
