@@ -32,6 +32,7 @@ type Pet = {
   name: string;
   species: string;
   breed: string | null;
+  gender: string | null;
   birthdate: string;
   chip_number: string | null;
   target_weight: number | null;
@@ -280,7 +281,7 @@ export default function PetDetailPage({
             {pet.name}
           </h1>
           <p style={{ color: "#9ca3af", margin: "4px 0" }}>
-            {pet.species}·{pet.breed}
+            {pet.species}·{pet.breed}·{pet.gender}
           </p>
           <p style={{ color: "#9ca3af", margin: "4px 0" }}>
             {new Date(pet.birthdate).toLocaleDateString()} · {age} years old
@@ -742,6 +743,11 @@ export default function PetDetailPage({
           {pet.breed && (
             <p style={{ color: "#333", fontSize: "13px", margin: "4px 0" }}>
               Breed：{pet.breed}
+            </p>
+          )}
+          {pet.gender && (
+            <p style={{ color: "#333", fontSize: "13px", margin: "4px 0" }}>
+              Gender：{pet.gender}
             </p>
           )}
 

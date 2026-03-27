@@ -33,6 +33,7 @@ model Pet {
   name            String
   species         String
   breed           String?
+  gender          String?
   birthdate       DateTime?
   photo_url       String?
   chip_number     String?

@@ -83,6 +83,7 @@ export async function GET(
 - 名字：${pet.name}
 - 物種：${pet.species}
 - 品種: ${pet.breed}
+- 性別: ${pet.gender}
 - 生日：${pet.birthdate?.toISOString().split("T")[0]}
 
 最近體重記錄（由新到舊）：

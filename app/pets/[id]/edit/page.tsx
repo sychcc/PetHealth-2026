@@ -8,6 +8,7 @@ type Pet = {
   id: string;
   name: string;
   species: string;
+  gender: string | null;
   breed: string | null;
   birthdate: string;
   chip_number: string | null;
@@ -25,6 +26,7 @@ export default function EditPetPage({
   const [name, setName] = useState("");
   const [species, setSpecies] = useState("");
   const [breed, setBreed] = useState("");
+  const [gender, setGender] = useState("");
   const [birthdate, setBirthdate] = useState("");
   const [chipNumber, setChipNumber] = useState("");
   const [photo, setPhoto] = useState<File | null>(null);
@@ -45,6 +47,7 @@ export default function EditPetPage({
         setName(data.name);
         setSpecies(data.species);
         setBreed(data.breed || "");
+        setGender(data.gender || "");
         setBirthdate(data.birthdate.split("T")[0]);
         setChipNumber(data.chip_number || "");
         setCurrentPhotoUrl(data.photo_url);
@@ -86,6 +89,7 @@ export default function EditPetPage({
         name,
         species,
         breed,
+        gender,
         birthdate,
         chip_number: chipNumber,
         photo_url,
@@ -199,6 +203,22 @@ export default function EditPetPage({
               fontSize: "14px",
             }}
           />
+          <select
+            value={gender}
+            onChange={(e) => setGender(e.target.value)}
+            style={{
+              padding: "10px 12px",
+              borderRadius: "8px",
+              border: "1px solid #374151",
+              background: "#1f2937",
+              color: "white",
+              fontSize: "14px",
+            }}
+          >
+            <option value="">Select gender</option>
+            <option value="Male">Male</option>
+            <option value="Female">Female</option>
+          </select>
           <input
             type="date"
             value={birthdate}
