@@ -263,6 +263,8 @@ export default function EditPetPage({
               <input
                 type="date"
                 value={birthdate}
+                min="2000-01-01"
+                max="2099-12-31"
                 onChange={(e) => setBirthdate(e.target.value)}
                 style={inputStyle}
               />

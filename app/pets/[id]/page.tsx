@@ -351,8 +351,8 @@ export default function PetDetailPage({
         >
           <div
             style={{
-              width: "80px",
-              height: "80px",
+              width: "120px",
+              height: "120px",
               borderRadius: "16px",
               background: "#f0fafa",
               border: "1px solid #e0f5f4",
@@ -617,23 +617,6 @@ export default function PetDetailPage({
                 >
                   {loadingAi ? "Analysing..." : "Re-analyse"}
                 </button>
-                {/* {showFull && (
-                  <button
-                    onClick={() => window.print()}
-                    style={{
-                      padding: "8px 16px",
-                      borderRadius: "8px",
-                      fontSize: "13px",
-                      fontWeight: 500,
-                      background: "transparent",
-                      color: "rgba(255,255,255,0.7)",
-                      border: "1px solid rgba(255,255,255,0.2)",
-                      cursor: "pointer",
-                    }}
-                  >
-                    Download PDF
-                  </button>
-                )} */}
               </div>
               {showFull && fullReport && (
                 <div
@@ -1408,7 +1391,7 @@ export default function PetDetailPage({
                   marginBottom: "14px",
                 }}
               >
-                Get instant health insights
+                Get instant health advice
               </div>
 
               <div
