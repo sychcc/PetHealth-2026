@@ -56,6 +56,7 @@ type MedicalRecord = {
   date: string;
   clinic: string | null;
   diagnosis: string | null;
+  prescription: string | null;
   cost: number | null;
 };
 type ChecklistItem = {
@@ -99,6 +100,9 @@ export default function PetDetailPage({
   );
   const [chatQuestion, setChatQuestion] = useState("");
   const [chatAnswer, setChatAnswer] = useState("");
+  const [chatHistory, setChatHistory] = useState<
+    { question: string; answer: string; open: boolean }[]
+  >([]);
   const [loadingChat, setLoadingChat] = useState(false);
   const [checklist, setCheckList] = useState<ChecklistItem[]>([]);
 
@@ -193,7 +197,12 @@ export default function PetDetailPage({
       body: JSON.stringify({ question: chatQuestion }),
     });
     const data = await res.json();
-    setChatAnswer(data.answer);
+    const answer = data.answer.replace(/#{1,3}\s/g, "").replace(/\*\*/g, "");
+    setChatHistory((prev) => [
+      { question: chatQuestion, answer, open: true },
+      ...prev,
+    ]);
+    setChatQuestion("");
     setLoadingChat(false);
   }
 
@@ -578,7 +587,7 @@ export default function PetDetailPage({
                 >
                   {loadingAi ? "Analysing..." : "Re-analyse"}
                 </button>
-                {showFull && (
+                {/* {showFull && (
                   <button
                     onClick={() => window.print()}
                     style={{
@@ -594,7 +603,7 @@ export default function PetDetailPage({
                   >
                     Download PDF
                   </button>
-                )}
+                )} */}
               </div>
               {showFull && fullReport && (
                 <div
@@ -1053,33 +1062,124 @@ export default function PetDetailPage({
             >
               <div
                 style={{
-                  fontSize: "15px",
-                  fontWeight: 600,
-                  color: "#0f2423",
-                  marginBottom: "16px",
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "flex-start",
+                  marginBottom: "20px",
+                  paddingBottom: "16px",
+                  borderBottom: "1px solid #e4eaeb",
                 }}
               >
-                {pet.name}'s Health Report
-              </div>
-              <div
-                style={{
-                  fontSize: "12px",
-                  color: "#4a6968",
-                  marginBottom: "16px",
-                }}
-              >
-                Generated: {new Date().toLocaleDateString()}
-              </div>
-              {vaccineRecords.length > 0 && (
-                <div style={{ marginBottom: "16px" }}>
+                <div>
                   <div
                     style={{
-                      fontSize: "13px",
+                      fontFamily: "Fraunces, serif",
+                      fontSize: "22px",
                       fontWeight: 600,
                       color: "#0f2423",
-                      marginBottom: "8px",
-                      textTransform: "uppercase" as const,
-                      letterSpacing: "0.06em",
+                    }}
+                  >
+                    {pet.name}'s Health Report
+                  </div>
+                  <div
+                    style={{
+                      fontSize: "12px",
+                      color: "#4a6968",
+                      marginTop: "4px",
+                    }}
+                  >
+                    Generated: {new Date().toLocaleDateString()}
+                  </div>
+                </div>
+                <button
+                  onClick={() => window.print()}
+                  className="no-print"
+                  style={{
+                    padding: "8px 16px",
+                    borderRadius: "8px",
+                    background: "#0E7C86",
+                    color: "white",
+                    border: "none",
+                    cursor: "pointer",
+                    fontSize: "13px",
+                    fontWeight: 600,
+                  }}
+                >
+                  Download PDF
+                </button>
+              </div>
+
+              {/* 基本資料 */}
+              <div
+                style={{
+                  marginBottom: "20px",
+                  paddingBottom: "16px",
+                  borderBottom: "1px solid #e4eaeb",
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: "14px",
+                    fontWeight: 600,
+                    color: "#0f2423",
+                    marginBottom: "12px",
+                  }}
+                >
+                  Basic Information
+                </div>
+                <div
+                  style={{
+                    display: "flex",
+                    flexWrap: "wrap" as const,
+                    gap: "0",
+                    fontSize: "13px",
+                    color: "#2d4a49",
+                  }}
+                >
+                  {[
+                    ["Name", pet.name],
+                    ["Species", pet.species],
+                    ["Breed", pet.breed || "—"],
+                    ["Gender", pet.gender || "—"],
+                    ["Birthday", new Date(pet.birthdate).toLocaleDateString()],
+                    ["Age", `${age} years old`],
+                    ...(pet.chip_number ? [["Chip", pet.chip_number]] : []),
+                    ...(pet.target_weight
+                      ? [["Target Weight", `${pet.target_weight} kg`]]
+                      : []),
+                  ].map(([label, value]) => (
+                    <div
+                      key={label}
+                      style={{
+                        width: "50%",
+                        padding: "6px 0",
+                        display: "flex",
+                        gap: "8px",
+                      }}
+                    >
+                      <span style={{ color: "#4a6968", minWidth: "100px" }}>
+                        {label}:
+                      </span>
+                      <span style={{ fontWeight: 500 }}>{value}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* 疫苗紀錄 */}
+              {vaccineRecords.length > 0 && (
+                <div
+                  style={{
+                    marginBottom: "20px",
+                    paddingBottom: "16px",
+                    borderBottom: "1px solid #e4eaeb",
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: "15px",
+                      fontWeight: 600,
+                      color: "#0f2423",
                     }}
                   >
                     Vaccines
@@ -1088,30 +1188,51 @@ export default function PetDetailPage({
                     <div
                       key={v.id}
                       style={{
-                        padding: "8px 0",
+                        padding: "10px 0",
                         borderBottom: "1px solid #F1F4F4",
                         fontSize: "13px",
                         color: "#2d4a49",
+                        display: "flex",
+                        justifyContent: "space-between",
                       }}
                     >
-                      <strong>{v.vaccine_name}</strong> — {v.date.split("T")[0]}
-                      {v.next_due_date &&
-                        ` · Next: ${v.next_due_date.split("T")[0]}`}
-                      {v.clinic && ` · ${v.clinic}`}
+                      <div>
+                        <strong>{v.vaccine_name}</strong>
+                        {v.clinic && (
+                          <span style={{ color: "#4a6968" }}>
+                            {" "}
+                            · {v.clinic}
+                          </span>
+                        )}
+                      </div>
+                      <div
+                        style={{
+                          fontSize: "15px",
+                          fontWeight: 600,
+                          color: "#0f2423",
+                        }}
+                      >
+                        {v.date.split("T")[0]}
+                        {v.next_due_date && (
+                          <span style={{ color: "#d4730a" }}>
+                            {" "}
+                            · Next: {v.next_due_date.split("T")[0]}
+                          </span>
+                        )}
+                      </div>
                     </div>
                   ))}
                 </div>
               )}
+
+              {/* 就醫紀錄 */}
               {medicalRecords.length > 0 && (
                 <div>
                   <div
                     style={{
-                      fontSize: "13px",
+                      fontSize: "15px",
                       fontWeight: 600,
                       color: "#0f2423",
-                      marginBottom: "8px",
-                      textTransform: "uppercase" as const,
-                      letterSpacing: "0.06em",
                     }}
                   >
                     Medical Records
@@ -1120,16 +1241,38 @@ export default function PetDetailPage({
                     <div
                       key={m.id}
                       style={{
-                        padding: "8px 0",
+                        padding: "10px 0",
                         borderBottom: "1px solid #F1F4F4",
                         fontSize: "13px",
                         color: "#2d4a49",
                       }}
                     >
-                      <strong>{m.brief_name}</strong> — {m.date.split("T")[0]}
-                      {m.clinic && ` · ${m.clinic}`}
-                      {m.diagnosis && ` · ${m.diagnosis}`}
-                      {m.cost && ` · NTD ${m.cost}`}
+                      <div
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          marginBottom: "4px",
+                        }}
+                      >
+                        <strong>{m.brief_name}</strong>
+                        <span style={{ color: "#4a6968" }}>
+                          {m.date.split("T")[0]}
+                          {m.cost ? ` · NTD ${m.cost}` : ""}
+                        </span>
+                      </div>
+                      {m.clinic && (
+                        <div style={{ color: "#4a6968" }}>📍 {m.clinic}</div>
+                      )}
+                      {m.diagnosis && (
+                        <div style={{ color: "#4a6968" }}>
+                          Diagnosis: {m.diagnosis}
+                        </div>
+                      )}
+                      {m.prescription && (
+                        <div style={{ color: "#4a6968" }}>
+                          Prescription: {m.prescription}
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -1242,7 +1385,7 @@ export default function PetDetailPage({
                 style={{
                   display: "flex",
                   gap: "8px",
-                  marginBottom: chatAnswer ? "12px" : "0",
+                  marginBottom: chatHistory.length > 0 ? "12px" : "0",
                 }}
               >
                 <input
@@ -1283,19 +1426,70 @@ export default function PetDetailPage({
                 </button>
               </div>
 
-              {chatAnswer && (
+              {/* Chat History */}
+              {chatHistory.length > 0 && (
                 <div
                   style={{
-                    background: "#f0fafa",
-                    border: "1px solid #e0f5f4",
-                    borderRadius: "10px",
-                    padding: "14px",
-                    fontSize: "13px",
-                    color: "#2d4a49",
-                    lineHeight: 1.7,
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "6px",
                   }}
                 >
-                  {chatAnswer.replace(/#{1,3}\s/g, "").replace(/\*\*/g, "")}
+                  {chatHistory.map((item, i) => (
+                    <div
+                      key={i}
+                      style={{
+                        borderRadius: "8px",
+                        border: "1px solid #e4eaeb",
+                        overflow: "hidden",
+                      }}
+                    >
+                      <div
+                        onClick={() =>
+                          setChatHistory((prev) =>
+                            prev.map((h, idx) =>
+                              idx === i ? { ...h, open: !h.open } : h,
+                            ),
+                          )
+                        }
+                        style={{
+                          padding: "10px 12px",
+                          cursor: "pointer",
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                          background: item.open ? "#f0fafa" : "white",
+                        }}
+                      >
+                        <span
+                          style={{
+                            fontSize: "13px",
+                            fontWeight: 500,
+                            color: "#0f2423",
+                          }}
+                        >
+                          {item.question}
+                        </span>
+                        <span style={{ fontSize: "11px", color: "#4a6968" }}>
+                          {item.open ? "▲" : "▼"}
+                        </span>
+                      </div>
+                      {item.open && (
+                        <div
+                          style={{
+                            padding: "10px 12px",
+                            background: "#f0fafa",
+                            fontSize: "13px",
+                            color: "#2d4a49",
+                            lineHeight: 1.65,
+                            borderTop: "1px solid #e0f5f4",
+                          }}
+                        >
+                          {item.answer}
+                        </div>
+                      )}
+                    </div>
+                  ))}
                 </div>
               )}
             </div>
