@@ -4,6 +4,29 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
+const css = `@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=Fraunces:ital,wght@0,300;0,600;1,600&display=swap');
+input, select, textarea { outline: none; }
+input:focus, select:focus, textarea:focus { border-color: #0E7C86 !important; }
+`;
+const inputStyle = {
+  width: "100%",
+  padding: "10px 12px",
+  borderRadius: "8px",
+  border: "1.5px solid #e4eaeb",
+  background: "white",
+  fontSize: "14px",
+  color: "#0f2423",
+  fontFamily: "DM Sans, sans-serif",
+  boxSizing: "border-box" as const,
+};
+const labelStyle = {
+  fontSize: "13px",
+  fontWeight: 500,
+  color: "#4a6968",
+  marginBottom: "4px",
+  display: "block" as const,
+};
+
 export default function EditMedicalPage({
   params,
 }: {
@@ -34,14 +57,14 @@ export default function EditMedicalPage({
   useEffect(() => {
     if (!id) return;
     fetch(`/api/pets/${id}`, { credentials: "include" })
-      .then((res) => res.json())
-      .then((data) => setPetName(data.name));
+      .then((r) => r.json())
+      .then((d) => setPetName(d.name));
   }, [id]);
 
   useEffect(() => {
     if (!id || !medicalId) return;
     fetch(`/api/pets/${id}/medical`, { credentials: "include" })
-      .then((res) => res.json())
+      .then((r) => r.json())
       .then((data) => {
         const medical = data.find((m: any) => m.id === medicalId);
         if (medical) {
@@ -59,7 +82,6 @@ export default function EditMedicalPage({
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-
     let photo_url = currentPhotoUrl;
     if (photo) {
       const formData = new FormData();
@@ -75,7 +97,6 @@ export default function EditMedicalPage({
       }
       photo_url = uploadData.url;
     }
-
     const res = await fetch(`/api/pets/${id}/medical/${medicalId}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
@@ -90,7 +111,6 @@ export default function EditMedicalPage({
         photo_url,
       }),
     });
-
     const data = await res.json();
     if (!res.ok) {
       setError(data.error);
@@ -100,159 +120,232 @@ export default function EditMedicalPage({
   }
 
   return (
-    <>
-    {/*麵包屑 */}
+    <div
+      style={{
+        fontFamily: "'DM Sans', sans-serif",
+        background: "#F1F4F4",
+        minHeight: "100vh",
+      }}
+    >
+      <style>{css}</style>
+
       <div
         style={{
+          background: "white",
+          borderBottom: "1px solid #e4eaeb",
+          padding: "0 32px",
+          height: "40px",
           display: "flex",
-          gap: "8px",
           alignItems: "center",
-          marginBottom: "16px",
-          fontSize: "14px",
-          color: "#9ca3af",
+          gap: "6px",
+          fontSize: "13px",
+          color: "#4a6968",
         }}
       >
-        <Link href="/pets" style={{ color: "#9ca3af", textDecoration: "none" }}>
+        <Link href="/pets" style={{ color: "#4a6968", textDecoration: "none" }}>
           My Pets
         </Link>
-        <span>›</span>
+        <span style={{ color: "#e4eaeb" }}>›</span>
         <Link
           href={`/pets/${id}`}
-          style={{ color: "#9ca3af", textDecoration: "none" }}
+          style={{ color: "#4a6968", textDecoration: "none" }}
         >
           {petName}
         </Link>
-        <span>›</span>
+        <span style={{ color: "#e4eaeb" }}>›</span>
         <Link
-          href={`/pets/${id}/weight`}
-          style={{ color: "#9ca3af", textDecoration: "none" }}
+          href={`/pets/${id}/medical`}
+          style={{ color: "#4a6968", textDecoration: "none" }}
         >
           Medical
         </Link>
-        <span>›</span>
-        <span style={{ color: "#f3f4f6" }}>Edit</span>
+        <span style={{ color: "#e4eaeb" }}>›</span>
+        <span style={{ color: "#2d4a49", fontWeight: 500 }}>Edit</span>
       </div>
-    <div style={{ padding: "24px", maxWidth: "400px", margin: "0 auto" }}>
-      <h1
-        style={{ fontSize: "24px", fontWeight: "bold", marginBottom: "24px" }}
+
+      <div
+        style={{ maxWidth: "560px", margin: "0 auto", padding: "32px 24px" }}
       >
-        Edit Medical Record
-      </h1>
-      <form
-        onSubmit={handleSubmit}
-        style={{ display: "flex", flexDirection: "column", gap: "12px" }}
-      >
-        <input
-          type="text"
-          placeholder="medical name *"
-          value={briefName}
-          onChange={(e) => setBriefName(e.target.value)}
+        <div
           style={{
-            padding: "8px",
-            borderRadius: "6px",
-            border: "1px solid #374151",
-            background: "#1f2937",
-            color: "white",
+            fontFamily: "Fraunces, serif",
+            fontSize: "28px",
+            fontWeight: 600,
+            color: "#0f2423",
+            marginBottom: "24px",
           }}
-        />
-        <label style={{ color: "#9ca3af", fontSize: "14px" }}>
-          Medial Date *
-        </label>
-        <input
-          type="date"
-          max={new Date().toISOString().split("T")[0]}
-          value={date}
-          onChange={(e) => setDate(e.target.value)}
-          style={{
-            padding: "8px",
-            borderRadius: "6px",
-            border: "1px solid #374151",
-            background: "#1f2937",
-            color: "white",
-          }}
-        />
-        <input
-          type="text"
-          placeholder="Clinic (optional)"
-          value={clinic}
-          onChange={(e) => setClinic(e.target.value)}
-          style={{
-            padding: "8px",
-            borderRadius: "6px",
-            border: "1px solid #374151",
-            background: "#1f2937",
-            color: "white",
-          }}
-        />
-        <input
-          type="text"
-          placeholder="Symptom (optional)"
-          value={symptoms}
-          onChange={(e) => setSymptoms(e.target.value)}
-          style={{
-            padding: "8px",
-            borderRadius: "6px",
-            border: "1px solid #374151",
-            background: "#1f2937",
-            color: "white",
-          }}
-        />
-        <input
-          type="text"
-          placeholder="Diagnosis (optional)"
-          value={diagnosis}
-          onChange={(e) => setDiagnosis(e.target.value)}
-          style={{
-            padding: "8px",
-            borderRadius: "6px",
-            border: "1px solid #374151",
-            background: "#1f2937",
-            color: "white",
-          }}
-        />
-        <input
-          type="text"
-          placeholder="Prescription (optional)"
-          value={prescription}
-          onChange={(e) => setPrescription(e.target.value)}
-          style={{
-            padding: "8px",
-            borderRadius: "6px",
-            border: "1px solid #374151",
-            background: "#1f2937",
-            color: "white",
-          }}
-        />
-        <input
-          type="number"
-          placeholder="Cost (optional)"
-          value={cost}
-          onChange={(e) => setCost(e.target.value)}
-          style={{
-            padding: "8px",
-            borderRadius: "6px",
-            border: "1px solid #374151",
-            background: "#1f2937",
-            color: "white",
-          }}
-        />
-        <input
-          type="file"
-          accept="image/jpeg,image/png"
-          onChange={(e) => setPhoto(e.target.files?.[0] || null)}
-          style={{ color: "white" }}
-        />
-        {error && <p style={{ color: "#dc2626" }}>{error}</p>}
-         <div style={{ display: "flex", gap: "12px", marginTop: "24px" }}>
-          <Link href={`/pets/${id}/medical`} style={{ flex: 1, background: "#1f2937", color: "white", padding: "10px", borderRadius: "6px", border: "1px solid #374151", cursor: "pointer", textDecoration: "none", textAlign: "center", fontSize: "14px" }}>
-            Cancel
-          </Link>
-          <button type="submit" style={{ flex: 1, background: "#4b5563", color: "white", padding: "10px", borderRadius: "6px", border: "none", cursor: "pointer", fontSize: "14px" }}>
-            Save
-          </button>
+        >
+          Edit Medical Record
         </div>
-      </form>
+
+        <div
+          style={{
+            background: "white",
+            borderRadius: "16px",
+            border: "1px solid #e4eaeb",
+            padding: "28px",
+          }}
+        >
+          {currentPhotoUrl && (
+            <div style={{ marginBottom: "20px" }}>
+              <label style={labelStyle}>Current Photo</label>
+              <img
+                src={currentPhotoUrl}
+                alt="current"
+                onClick={() => window.open(currentPhotoUrl, "_blank")}
+                style={{
+                  width: "80px",
+                  height: "80px",
+                  objectFit: "cover",
+                  borderRadius: "12px",
+                  border: "1px solid #e4eaeb",
+                  cursor: "pointer",
+                }}
+              />
+            </div>
+          )}
+
+          <form
+            onSubmit={handleSubmit}
+            style={{ display: "flex", flexDirection: "column", gap: "16px" }}
+          >
+            <div>
+              <label style={labelStyle}>Record Name *</label>
+              <input
+                type="text"
+                placeholder="e.g. Annual checkup"
+                value={briefName}
+                onChange={(e) => setBriefName(e.target.value)}
+                style={inputStyle}
+              />
+            </div>
+
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "1fr 1fr",
+                gap: "12px",
+              }}
+            >
+              <div>
+                <label style={labelStyle}>Date *</label>
+                <input
+                  type="date"
+                  max={new Date().toISOString().split("T")[0]}
+                  value={date}
+                  onChange={(e) => setDate(e.target.value)}
+                  style={inputStyle}
+                />
+              </div>
+              <div>
+                <label style={labelStyle}>Clinic</label>
+                <input
+                  type="text"
+                  placeholder="Optional"
+                  value={clinic}
+                  onChange={(e) => setClinic(e.target.value)}
+                  style={inputStyle}
+                />
+              </div>
+            </div>
+
+            <div>
+              <label style={labelStyle}>Symptoms</label>
+              <input
+                type="text"
+                placeholder="Optional"
+                value={symptoms}
+                onChange={(e) => setSymptoms(e.target.value)}
+                style={inputStyle}
+              />
+            </div>
+
+            <div>
+              <label style={labelStyle}>Diagnosis</label>
+              <input
+                type="text"
+                placeholder="Optional"
+                value={diagnosis}
+                onChange={(e) => setDiagnosis(e.target.value)}
+                style={inputStyle}
+              />
+            </div>
+
+            <div>
+              <label style={labelStyle}>Prescription</label>
+              <input
+                type="text"
+                placeholder="Optional"
+                value={prescription}
+                onChange={(e) => setPrescription(e.target.value)}
+                style={inputStyle}
+              />
+            </div>
+
+            <div>
+              <label style={labelStyle}>Cost (NTD)</label>
+              <input
+                type="number"
+                placeholder="Optional"
+                value={cost}
+                onChange={(e) => setCost(e.target.value)}
+                style={inputStyle}
+              />
+            </div>
+
+            <div>
+              <label style={labelStyle}>Update Photo</label>
+              <input
+                type="file"
+                accept="image/jpeg,image/png"
+                onChange={(e) => setPhoto(e.target.files?.[0] || null)}
+                style={{ fontSize: "13px", color: "#4a6968" }}
+              />
+            </div>
+
+            {error && (
+              <p style={{ color: "#c0392b", fontSize: "13px", margin: 0 }}>
+                {error}
+              </p>
+            )}
+
+            <div style={{ display: "flex", gap: "12px", marginTop: "8px" }}>
+              <Link
+                href={`/pets/${id}/medical`}
+                style={{
+                  flex: 1,
+                  padding: "11px",
+                  borderRadius: "10px",
+                  border: "1.5px solid #e4eaeb",
+                  color: "#2d4a49",
+                  textDecoration: "none",
+                  textAlign: "center",
+                  fontSize: "14px",
+                  fontWeight: 500,
+                }}
+              >
+                Cancel
+              </Link>
+              <button
+                type="submit"
+                style={{
+                  flex: 1,
+                  padding: "11px",
+                  borderRadius: "10px",
+                  background: "#0E7C86",
+                  color: "white",
+                  border: "none",
+                  cursor: "pointer",
+                  fontSize: "14px",
+                  fontWeight: 600,
+                }}
+              >
+                Save Changes
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
     </div>
-    </>
   );
 }

@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 
 type Vaccine = {
@@ -15,12 +14,13 @@ type Vaccine = {
   photo_url: string | null;
 };
 
+const css = `@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=Fraunces:ital,wght@0,300;0,600;1,600&display=swap');`;
+
 export default function VaccinesPage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const router = useRouter();
   const [id, setId] = useState("");
   const [vaccines, setVaccines] = useState<Vaccine[]>([]);
   const [petName, setPetName] = useState("");
@@ -32,11 +32,11 @@ export default function VaccinesPage({
   useEffect(() => {
     if (!id) return;
     fetch(`/api/pets/${id}/vaccines`, { credentials: "include" })
-      .then((res) => res.json())
-      .then((data) => setVaccines(data));
+      .then((r) => r.json())
+      .then(setVaccines);
     fetch(`/api/pets/${id}`, { credentials: "include" })
-      .then((res) => res.json())
-      .then((data) => setPetName(data.name));
+      .then((r) => r.json())
+      .then((d) => setPetName(d.name));
   }, [id]);
 
   async function handleDelete(vaccineId: string) {
@@ -45,51 +45,59 @@ export default function VaccinesPage({
       method: "DELETE",
       credentials: "include",
     });
-    if (res.ok) {
-      setVaccines(vaccines.filter((v) => v.id !== vaccineId));
-    }
+    if (res.ok) setVaccines(vaccines.filter((v) => v.id !== vaccineId));
   }
 
-  function isDueSoon(next_due_date: string | null) {
-    if (!next_due_date) return false;
-    const now = new Date().getTime();
-    const due = new Date(next_due_date).getTime();
-    const diff = due - now;
-    return diff > 0 && diff < 5 * 24 * 60 * 60 * 1000;
+  function isDueSoon(d: string | null) {
+    if (!d) return false;
+    const diff = new Date(d).getTime() - new Date().getTime();
+    return diff > 0 && diff < 30 * 24 * 60 * 60 * 1000;
   }
 
-  function isExpired(next_due_date: string | null) {
-    if (!next_due_date) return false;
-    return new Date(next_due_date).getTime() < new Date().getTime();
+  function isExpired(d: string | null) {
+    if (!d) return false;
+    return new Date(d).getTime() < new Date().getTime();
   }
 
   return (
-    <>
-      {/*麵包屑 */}
+    <div
+      style={{
+        fontFamily: "'DM Sans', sans-serif",
+        background: "#F1F4F4",
+        minHeight: "100vh",
+      }}
+    >
+      <style>{css}</style>
       <div
         style={{
+          background: "white",
+          borderBottom: "1px solid #e4eaeb",
+          padding: "0 32px",
+          height: "40px",
           display: "flex",
-          gap: "8px",
           alignItems: "center",
-          marginBottom: "16px",
-          fontSize: "14px",
-          color: "#9ca3af",
+          gap: "6px",
+          fontSize: "13px",
+          color: "#4a6968",
         }}
       >
-        <Link href="/pets" style={{ color: "#9ca3af", textDecoration: "none" }}>
+        <Link href="/pets" style={{ color: "#4a6968", textDecoration: "none" }}>
           My Pets
         </Link>
-        <span>›</span>
+        <span style={{ color: "#e4eaeb" }}>›</span>
         <Link
           href={`/pets/${id}`}
-          style={{ color: "#9ca3af", textDecoration: "none" }}
+          style={{ color: "#4a6968", textDecoration: "none" }}
         >
           {petName}
         </Link>
-        <span>›</span>
-        <span style={{ color: "#f3f4f6" }}>Vaccines</span>
+        <span style={{ color: "#e4eaeb" }}>›</span>
+        <span style={{ color: "#2d4a49", fontWeight: 500 }}>Vaccines</span>
       </div>
-      <div style={{ padding: "24px", maxWidth: "600px", margin: "0 auto" }}>
+
+      <div
+        style={{ maxWidth: "800px", margin: "0 auto", padding: "28px 24px" }}
+      >
         <div
           style={{
             display: "flex",
@@ -98,24 +106,57 @@ export default function VaccinesPage({
             marginBottom: "24px",
           }}
         >
-          <h1 style={{ fontSize: "24px", fontWeight: "bold" }}>
-            Vaccine Records
-          </h1>
+          <div>
+            <div
+              style={{
+                fontFamily: "Fraunces, serif",
+                fontSize: "28px",
+                fontWeight: 600,
+                color: "#0f2423",
+              }}
+            >
+              Vaccine Records
+            </div>
+            <div
+              style={{
+                fontSize: "14px",
+                color: "#4a6968",
+                fontWeight: 300,
+                marginTop: "4px",
+              }}
+            >
+              {vaccines.length} records for {petName}
+            </div>
+          </div>
           <Link
             href={`/pets/${id}/vaccines/create`}
             style={{
-              background: "#4b5563",
+              padding: "10px 18px",
+              borderRadius: "10px",
+              background: "#0E7C86",
               color: "white",
-              padding: "8px 16px",
-              borderRadius: "6px",
               textDecoration: "none",
+              fontSize: "14px",
+              fontWeight: 600,
             }}
           >
             + Add Vaccine
           </Link>
         </div>
+
         {vaccines.length === 0 ? (
-          <p style={{ color: "#9ca3af" }}>No vaccine records yet.</p>
+          <div
+            style={{
+              background: "white",
+              borderRadius: "16px",
+              border: "1px solid #e4eaeb",
+              padding: "48px",
+              textAlign: "center",
+              color: "#4a6968",
+            }}
+          >
+            No vaccine records yet.
+          </div>
         ) : (
           <div
             style={{ display: "flex", flexDirection: "column", gap: "12px" }}
@@ -124,71 +165,173 @@ export default function VaccinesPage({
               <div
                 key={v.id}
                 style={{
-                  background: "#1f2937",
-                  padding: "16px",
-                  borderRadius: "8px",
+                  background: "white",
+                  borderRadius: "16px",
+                  border: "1px solid #e4eaeb",
+                  padding: "20px",
                 }}
               >
-                <p style={{ fontWeight: "bold", fontSize: "16px" }}>
-                  {v.vaccine_name}
-                </p>
-                <p style={{ color: "#9ca3af", fontSize: "14px" }}>
-                  Date: {new Date(v.date).toLocaleDateString()}
-                </p>
-                {v.next_due_date && (
-                  <p
-                    style={{
-                      color: isExpired(v.next_due_date)
-                        ? "#6b7280"
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "flex-start",
+                    marginBottom: "12px",
+                  }}
+                >
+                  <div>
+                    <div
+                      style={{
+                        fontSize: "17px",
+                        fontWeight: 600,
+                        color: "#0f2423",
+                        marginBottom: "4px",
+                      }}
+                    >
+                      {v.vaccine_name}
+                    </div>
+                    <div style={{ fontSize: "13px", color: "#4a6968" }}>
+                      Vaccinated: {new Date(v.date).toLocaleDateString()}
+                    </div>
+                  </div>
+                  {v.next_due_date && (
+                    <div
+                      style={{
+                        padding: "4px 10px",
+                        borderRadius: "99px",
+                        fontSize: "12px",
+                        fontWeight: 600,
+                        background: isExpired(v.next_due_date)
+                          ? "#fdeaea"
+                          : isDueSoon(v.next_due_date)
+                            ? "#fff4e6"
+                            : "#e6f9f0",
+                        color: isExpired(v.next_due_date)
+                          ? "#c0392b"
+                          : isDueSoon(v.next_due_date)
+                            ? "#d4730a"
+                            : "#1a7a4a",
+                      }}
+                    >
+                      {isExpired(v.next_due_date)
+                        ? "Expired"
                         : isDueSoon(v.next_due_date)
-                          ? "#ef4444"
-                          : "#9ca3af",
-                      fontSize: "14px",
-                    }}
-                  >
-                    Next Due: {new Date(v.next_due_date).toLocaleDateString()}
-                    {isExpired(v.next_due_date) && " Expired"}
-                    {isDueSoon(v.next_due_date) && " Due Soon!"}
-                  </p>
-                )}
-                {v.clinic && (
-                  <p style={{ color: "#9ca3af", fontSize: "14px" }}>
-                    Clinic: {v.clinic}
-                  </p>
-                )}
-                {v.vet_name && (
-                  <p style={{ color: "#9ca3af", fontSize: "14px" }}>
-                    Vet: {v.vet_name}
-                  </p>
-                )}
-                {v.cost && (
-                  <p style={{ color: "#9ca3af", fontSize: "14px" }}>
-                    Cost: NTD {v.cost}
-                  </p>
-                )}
-                {v.photo_url && (
-                  <img
-                    src={v.photo_url}
-                    alt="vaccine record"
-                    style={{
-                      width: "100px",
-                      height: "100px",
-                      objectFit: "cover",
-                      borderRadius: "6px",
-                      marginTop: "8px",
-                    }}
-                  />
-                )}
-                <div style={{ display: "flex", gap: "8px", marginTop: "8px" }}>
+                          ? "Due Soon"
+                          : "Current"}
+                    </div>
+                  )}
+                </div>
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(3, 1fr)",
+                    gap: "8px",
+                    marginBottom: "12px",
+                  }}
+                >
+                  {v.next_due_date && (
+                    <div
+                      style={{
+                        background: "#F1F4F4",
+                        borderRadius: "8px",
+                        padding: "10px 12px",
+                      }}
+                    >
+                      <div
+                        style={{
+                          fontSize: "11px",
+                          color: "#4a6968",
+                          marginBottom: "2px",
+                          textTransform: "uppercase" as const,
+                          letterSpacing: "0.06em",
+                        }}
+                      >
+                        Next Due
+                      </div>
+                      <div
+                        style={{
+                          fontSize: "13px",
+                          fontWeight: 500,
+                          color: "#0f2423",
+                        }}
+                      >
+                        {new Date(v.next_due_date).toLocaleDateString()}
+                      </div>
+                    </div>
+                  )}
+                  {v.clinic && (
+                    <div
+                      style={{
+                        background: "#F1F4F4",
+                        borderRadius: "8px",
+                        padding: "10px 12px",
+                      }}
+                    >
+                      <div
+                        style={{
+                          fontSize: "11px",
+                          color: "#4a6968",
+                          marginBottom: "2px",
+                          textTransform: "uppercase" as const,
+                          letterSpacing: "0.06em",
+                        }}
+                      >
+                        Clinic
+                      </div>
+                      <div
+                        style={{
+                          fontSize: "13px",
+                          fontWeight: 500,
+                          color: "#0f2423",
+                        }}
+                      >
+                        {v.clinic}
+                      </div>
+                    </div>
+                  )}
+                  {v.cost && (
+                    <div
+                      style={{
+                        background: "#F1F4F4",
+                        borderRadius: "8px",
+                        padding: "10px 12px",
+                      }}
+                    >
+                      <div
+                        style={{
+                          fontSize: "11px",
+                          color: "#4a6968",
+                          marginBottom: "2px",
+                          textTransform: "uppercase" as const,
+                          letterSpacing: "0.06em",
+                        }}
+                      >
+                        Cost
+                      </div>
+                      <div
+                        style={{
+                          fontSize: "13px",
+                          fontWeight: 500,
+                          color: "#0f2423",
+                        }}
+                      >
+                        NTD {v.cost}
+                      </div>
+                    </div>
+                  )}
+                </div>
+                <div style={{ display: "flex", gap: "8px" }}>
                   <Link
                     href={`/pets/${id}/vaccines/${v.id}/edit`}
                     style={{
-                      background: "#6b7280",
-                      color: "white",
-                      padding: "6px 12px",
-                      borderRadius: "6px",
+                      padding: "6px 14px",
+                      borderRadius: "8px",
+                      background: "transparent",
+                      border: "1.5px solid #e4eaeb",
+                      color: "#2d4a49",
                       textDecoration: "none",
-                      fontSize: "14px",
+                      fontSize: "13px",
+                      fontWeight: 500,
                     }}
                   >
                     Edit
@@ -196,13 +339,14 @@ export default function VaccinesPage({
                   <button
                     onClick={() => handleDelete(v.id)}
                     style={{
-                      background: "#374151",
-                      color: "white",
-                      padding: "6px 12px",
-                      borderRadius: "6px",
-                      border: "none",
+                      padding: "6px 14px",
+                      borderRadius: "8px",
+                      background: "transparent",
+                      border: "1.5px solid #fad0d0",
+                      color: "#c0392b",
                       cursor: "pointer",
-                      fontSize: "14px",
+                      fontSize: "13px",
+                      fontWeight: 500,
                     }}
                   >
                     Delete
@@ -213,6 +357,6 @@ export default function VaccinesPage({
           </div>
         )}
       </div>
-    </>
+    </div>
   );
 }

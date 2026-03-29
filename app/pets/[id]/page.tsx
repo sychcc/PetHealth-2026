@@ -3,25 +3,23 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Line, Pie } from "react-chartjs-2";
+import { Line } from "react-chartjs-2";
 import {
   Chart as ChartJS,
   CategoryScale,
   LinearScale,
   PointElement,
   LineElement,
-  ArcElement,
   Title,
   Tooltip,
   Legend,
 } from "chart.js";
-// 註冊chart.js
+
 ChartJS.register(
   CategoryScale,
   LinearScale,
   PointElement,
   LineElement,
-  ArcElement,
   Title,
   Tooltip,
   Legend,
@@ -38,14 +36,13 @@ type Pet = {
   target_weight: number | null;
   photo_url: string | null;
 };
-// 體重追蹤-實際體重
+
 type WeightRecord = {
   id: string;
   date: string;
   weight: number;
   notes: string | null;
 };
-
 type VaccineRecord = {
   id: string;
   vaccine_name: string;
@@ -53,7 +50,6 @@ type VaccineRecord = {
   next_due_date: string | null;
   clinic: string | null;
 };
-
 type MedicalRecord = {
   id: string;
   brief_name: string;
@@ -62,7 +58,6 @@ type MedicalRecord = {
   diagnosis: string | null;
   cost: number | null;
 };
-
 type ChecklistItem = {
   id: string;
   item_key: string;
@@ -72,6 +67,17 @@ type ChecklistItem = {
   completed_at: string | null;
 };
 
+const css = `
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=Fraunces:ital,wght@0,300;0,600;1,600&display=swap');
+  .tab-btn:hover { background: white; color: #2d4a49; }
+  .btn-outline:hover { border-color: #2ec4ba; color: #0E7C86; }
+  .cl-item:hover { background: #f0fafa; }
+  @media print {
+    .no-print { display: none !important; }
+    body { background: white; }
+  }
+`;
+
 export default function PetDetailPage({
   params,
 }: {
@@ -80,13 +86,10 @@ export default function PetDetailPage({
   const router = useRouter();
   const [pet, setPet] = useState<Pet | null>(null);
   const [weightRecords, setWeightRecords] = useState<WeightRecord[]>([]);
-  //用來判斷要不要顯示取得ai健康分析的按鈕
   const [vaccineRecords, setVaccineRecords] = useState<VaccineRecord[]>([]);
   const [medicalRecords, setMedicalRecords] = useState<MedicalRecord[]>([]);
-  //
   const [error, setError] = useState("");
   const [id, setId] = useState<string>("");
-  // for ai-summary
   const [summary, setSummary] = useState("");
   const [fullReport, setFullReport] = useState("");
   const [showFull, setShowFull] = useState(false);
@@ -94,11 +97,9 @@ export default function PetDetailPage({
   const [analysisCreatedAt, setAnalysisCreatedAt] = useState<string | null>(
     null,
   );
-  // for ai-chat
   const [chatQuestion, setChatQuestion] = useState("");
   const [chatAnswer, setChatAnswer] = useState("");
   const [loadingChat, setLoadingChat] = useState(false);
-  // for checklist
   const [checklist, setCheckList] = useState<ChecklistItem[]>([]);
 
   useEffect(() => {
@@ -108,38 +109,30 @@ export default function PetDetailPage({
   useEffect(() => {
     if (!id) return;
     fetch(`/api/pets/${id}`, { credentials: "include" })
-      .then((res) => res.json())
+      .then((r) => r.json())
       .then((data) => {
-        if (data.error) {
-          setError(data.error);
-        } else {
-          setPet(data);
-        }
+        if (data.error) setError(data.error);
+        else setPet(data);
       });
-    //獲取實際體重
     fetch(`/api/pets/${id}/weight`, { credentials: "include" })
-      .then((res) => res.json())
-      .then((data) => setWeightRecords(data));
-    //疫苗紀錄
+      .then((r) => r.json())
+      .then(setWeightRecords);
     fetch(`/api/pets/${id}/vaccines`, { credentials: "include" })
-      .then((res) => res.json())
-      .then((data) => setVaccineRecords(data));
-    //醫療紀錄
+      .then((r) => r.json())
+      .then(setVaccineRecords);
     fetch(`/api/pets/${id}/medical`, { credentials: "include" })
-      .then((res) => res.json())
-      .then((data) => setMedicalRecords(data));
-    //checklist
-    //先post一次確定存在清單，如果沒有系統會自動建立
+      .then((r) => r.json())
+      .then(setMedicalRecords);
     fetch(`/api/pets/${id}/checklist`, {
       method: "POST",
       credentials: "include",
     }).then(() => {
       fetch(`/api/pets/${id}/checklist`, { credentials: "include" })
-        .then((res) => res.json())
-        .then((data) => setCheckList(data));
+        .then((r) => r.json())
+        .then(setCheckList);
     });
-    //自動Load ai分析
     loadAiSummary();
+    localStorage.setItem("lastViewedPetId", id);
   }, [id]);
 
   async function handleDelete() {
@@ -148,15 +141,9 @@ export default function PetDetailPage({
       method: "DELETE",
       credentials: "include",
     });
-    if (res.ok) {
-      router.push("/pets");
-    }
+    if (res.ok) router.push("/pets");
   }
 
-  if (error) return <p>{error}</p>;
-  if (!pet) return <p>Loading...</p>;
-
-  //處理checklist的打勾 Or 取消打勾
   async function handleToggle(itemId: string, is_completed: boolean) {
     const res = await fetch(`/api/pets/${id}/checklist/${itemId}`, {
       method: "PATCH",
@@ -164,21 +151,18 @@ export default function PetDetailPage({
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ is_completed }),
     });
-    if (res.ok) {
+    if (res.ok)
       setCheckList(
         checklist.map((item) =>
           item.id === itemId ? { ...item, is_completed } : item,
         ),
       );
-    }
   }
 
-  //ai-summay 有兩個function
-  //1. 頁面載入時自動打（不帶fresh)
   async function loadAiSummary() {
     setLoadingAi(true);
     fetch(`/api/pets/${id}/ai-summary`, { credentials: "include" })
-      .then((res) => res.json())
+      .then((r) => r.json())
       .then((data) => {
         setSummary(data.summary);
         setFullReport(data.full_report);
@@ -186,11 +170,11 @@ export default function PetDetailPage({
         setLoadingAi(false);
       });
   }
-  //2.使用者點重新分析（帶fresh=true)
+
   async function handleRefreshAi() {
     setLoadingAi(true);
     fetch(`/api/pets/${id}/ai-summary?refresh=true`, { credentials: "include" })
-      .then((res) => res.json())
+      .then((r) => r.json())
       .then((data) => {
         setSummary(data.summary);
         setFullReport(data.full_report);
@@ -198,7 +182,7 @@ export default function PetDetailPage({
         setLoadingAi(false);
       });
   }
-  //for ai-chat
+
   async function handleChat() {
     if (!chatQuestion.trim()) return;
     setLoadingChat(true);
@@ -213,12 +197,21 @@ export default function PetDetailPage({
     setLoadingChat(false);
   }
 
-  // pdf
-  async function handleDownloadPdf() {
-    window.print();
-  }
+  if (error)
+    return <p style={{ padding: "32px", color: "#ef4444" }}>{error}</p>;
+  if (!pet)
+    return (
+      <p
+        style={{
+          padding: "32px",
+          color: "#4a6968",
+          fontFamily: "DM Sans, sans-serif",
+        }}
+      >
+        Loading...
+      </p>
+    );
 
-  // age & 星座
   const birthday = new Date(pet.birthdate);
   const today = new Date();
   let age = today.getFullYear() - birthday.getFullYear();
@@ -226,388 +219,632 @@ export default function PetDetailPage({
     today.getMonth() > birthday.getMonth() ||
     (today.getMonth() === birthday.getMonth() &&
       today.getDate() >= birthday.getDate());
-  if (!hasBirthdayPassed) {
-    age -= 1;
-  }
+  if (!hasBirthdayPassed) age -= 1;
+
+  // Health Risk 計算
+  const oneTimeDone = checklist.filter(
+    (i) => i.type === "one_time" && i.is_completed,
+  ).length;
+  const oneTimeTotal = checklist.filter((i) => i.type === "one_time").length;
+  const annualDone = checklist.filter(
+    (i) =>
+      i.type === "annual" &&
+      i.completed_at &&
+      new Date(i.completed_at).getFullYear() === new Date().getFullYear(),
+  ).length;
+  const annualTotal = checklist.filter((i) => i.type === "annual").length;
+  const totalDone = oneTimeDone + annualDone;
+  const totalItems = oneTimeTotal + annualTotal;
+  const completionRate =
+    totalItems > 0 ? Math.round((totalDone / totalItems) * 100) : 0;
+  const riskLevel =
+    completionRate >= 80 ? "Low" : completionRate >= 50 ? "Medium" : "High";
+  const riskColor =
+    riskLevel === "Low"
+      ? "#1a7a4a"
+      : riskLevel === "Medium"
+        ? "#d4730a"
+        : "#c0392b";
+  const riskBg =
+    riskLevel === "Low"
+      ? "#e6f9f0"
+      : riskLevel === "Medium"
+        ? "#fff4e6"
+        : "#fdeaea";
+  const circumference = 2 * Math.PI * 40;
+  const dashOffset = circumference - (completionRate / 100) * circumference;
+
+  const nextVaccine = vaccineRecords
+    .filter((v) => v.next_due_date && new Date(v.next_due_date) > new Date())
+    .sort(
+      (a, b) =>
+        new Date(a.next_due_date!).getTime() -
+        new Date(b.next_due_date!).getTime(),
+    )[0];
 
   return (
-    <div style={{ maxWidth: "800px", margin: "0 auto", padding: "32px 24px" }}>
-      {/* 寵物基本資料區 */}
+    <div
+      style={{
+        fontFamily: "'DM Sans', sans-serif",
+        background: "#F1F4F4",
+        minHeight: "100vh",
+      }}
+    >
+      <style>{css}</style>
+
+      {/* BREADCRUMB */}
       <div
+        className="no-print"
         style={{
+          background: "white",
+          borderBottom: "1px solid #e4eaeb",
+          padding: "0 32px",
+          height: "40px",
           display: "flex",
-          gap: "24px",
-          alignItems: "flex-start",
-          marginBottom: "24px",
+          alignItems: "center",
+          gap: "6px",
+          fontSize: "13px",
+          color: "#4a6968",
         }}
       >
-        {pet.photo_url ? (
-          <img
-            src={pet.photo_url}
-            alt={pet.name}
-            style={{
-              width: "140px",
-              height: "140px",
-              objectFit: "cover",
-              borderRadius: "12px",
-              flexShrink: 0,
-            }}
-          />
-        ) : (
+        <Link href="/pets" style={{ color: "#4a6968", textDecoration: "none" }}>
+          My Pets
+        </Link>
+        <span style={{ color: "#e4eaeb" }}>›</span>
+        <span style={{ color: "#2d4a49", fontWeight: 500 }}>{pet.name}</span>
+      </div>
+
+      <div
+        style={{ maxWidth: "1100px", margin: "0 auto", padding: "28px 24px" }}
+      >
+        {/* PET HEADER */}
+        <div
+          style={{
+            background: "white",
+            borderRadius: "16px",
+            border: "1px solid #e4eaeb",
+            padding: "24px 28px",
+            marginBottom: "24px",
+            display: "flex",
+            alignItems: "center",
+            gap: "20px",
+          }}
+        >
           <div
             style={{
-              width: "140px",
-              height: "140px",
-              background: "#1f2937",
-              borderRadius: "12px",
+              width: "80px",
+              height: "80px",
+              borderRadius: "16px",
+              background: "#f0fafa",
+              border: "1px solid #e0f5f4",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              color: "#6b7280",
+              fontSize: "40px",
               flexShrink: 0,
+              overflow: "hidden",
             }}
           >
-            No Photo
+            {pet.photo_url ? (
+              <img
+                src={pet.photo_url}
+                alt={pet.name}
+                style={{ width: "100%", height: "100%", objectFit: "cover" }}
+              />
+            ) : pet.species === "Cat" ? (
+              "🐱"
+            ) : (
+              "🐶"
+            )}
           </div>
-        )}
-        <div>
-          <h1
-            style={{
-              fontSize: "28px",
-              fontWeight: "bold",
-              marginBottom: "8px",
-            }}
-          >
-            {pet.name}
-          </h1>
-          <p style={{ color: "#9ca3af", margin: "4px 0" }}>
-            {pet.species}·{pet.breed}·{pet.gender}
-          </p>
-          <p style={{ color: "#9ca3af", margin: "4px 0" }}>
-            {new Date(pet.birthdate).toLocaleDateString()} · {age} years old
-          </p>
-          {pet.chip_number && (
-            <p style={{ color: "#9ca3af", margin: "4px 0" }}>
-              Chip: {pet.chip_number}
-            </p>
-          )}
-          {pet.target_weight && (
-            <p style={{ color: "#9ca3af", margin: "4px 0" }}>
-              Target: {pet.target_weight} kg
-            </p>
-          )}
-        </div>
-      </div>
-
-      {/* 操作按鈕 */}
-      <div
-        style={{
-          display: "flex",
-          flexWrap: "wrap",
-          gap: "8px",
-          marginBottom: "32px",
-          paddingBottom: "24px",
-          borderBottom: "1px solid #1f2937",
-        }}
-      >
-        <Link
-          href={`/pets/${id}/vaccines`}
-          style={{
-            background: "#1f2937",
-            color: "white",
-            padding: "8px 14px",
-            borderRadius: "6px",
-            textDecoration: "none",
-            fontSize: "14px",
-          }}
-        >
-          Vaccines
-        </Link>
-        <Link
-          href={`/pets/${id}/weight`}
-          style={{
-            background: "#1f2937",
-            color: "white",
-            padding: "8px 14px",
-            borderRadius: "6px",
-            textDecoration: "none",
-            fontSize: "14px",
-          }}
-        >
-          Weight
-        </Link>
-        <Link
-          href={`/pets/${id}/medical`}
-          style={{
-            background: "#1f2937",
-            color: "white",
-            padding: "8px 14px",
-            borderRadius: "6px",
-            textDecoration: "none",
-            fontSize: "14px",
-          }}
-        >
-          Medical
-        </Link>
-        <Link
-          href={`/pets/${id}/edit`}
-          style={{
-            background: "#1f2937",
-            color: "white",
-            padding: "8px 14px",
-            borderRadius: "6px",
-            textDecoration: "none",
-            fontSize: "14px",
-          }}
-        >
-          Edit
-        </Link>
-        <button
-          onClick={handleDelete}
-          style={{
-            background: "#1f2937",
-            color: "#ef4444",
-            padding: "8px 14px",
-            borderRadius: "6px",
-            border: "none",
-            cursor: "pointer",
-            fontSize: "14px",
-          }}
-        >
-          Delete
-        </button>
-      </div>
-
-      {/* Dashboard */}
-      {weightRecords.length === 0 &&
-        medicalRecords.length === 0 &&
-        vaccineRecords.length === 0 && (
-          <p style={{ color: "#6b7280", textAlign: "center", padding: "24px" }}>
-            Looks like there's no data. Add your pet's first health record to
-            get started!
-          </p>
-        )}
-
-      {(weightRecords.length > 0 ||
-        medicalRecords.length > 0 ||
-        vaccineRecords.length > 0) && (
-        <div style={{ marginBottom: "24px" }}>
-          {/* 必做事項清單 */}
-          {checklist.length > 0 && (
+          <div style={{ flex: 1 }}>
             <div
               style={{
-                marginBottom: "24px",
-                background: "#1f2937",
-                borderRadius: "10px",
-                padding: "20px",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "5px",
+                fontSize: "11px",
+                fontWeight: 600,
+                textTransform: "uppercase" as const,
+                letterSpacing: "0.08em",
+                color: "#1a7a4a",
+                background: "#e6f9f0",
+                border: "1px solid #b3edd0",
+                padding: "3px 9px",
+                borderRadius: "99px",
+                marginBottom: "6px",
               }}
             >
-              <h2
+              <span
                 style={{
-                  fontSize: "16px",
-                  fontWeight: "bold",
-                  marginBottom: "16px",
+                  width: "6px",
+                  height: "6px",
+                  borderRadius: "50%",
+                  background: "#1a7a4a",
+                  display: "inline-block",
+                }}
+              ></span>
+              Active
+            </div>
+            <div
+              style={{
+                fontFamily: "Fraunces, serif",
+                fontSize: "28px",
+                fontWeight: 600,
+                color: "#0f2423",
+                lineHeight: 1,
+              }}
+            >
+              {pet.name}
+            </div>
+            <div
+              style={{ fontSize: "14px", color: "#4a6968", marginTop: "4px" }}
+            >
+              {pet.breed || pet.species}
+              {pet.gender ? ` · ${pet.gender}` : ""} · {age} years old{" "}
+              {pet.target_weight ? `· Target: ${pet.target_weight} kg` : ""}
+            </div>
+          </div>
+          <div className="no-print" style={{ display: "flex", gap: "8px" }}>
+            <Link
+              href={`/pets/${id}/edit`}
+              className="btn-outline"
+              style={{
+                padding: "7px 14px",
+                borderRadius: "8px",
+                fontSize: "13px",
+                fontWeight: 500,
+                background: "transparent",
+                border: "1.5px solid #e4eaeb",
+                color: "#2d4a49",
+                textDecoration: "none",
+                transition: "all 0.15s",
+              }}
+            >
+              Edit
+            </Link>
+            <button
+              onClick={handleDelete}
+              style={{
+                padding: "7px 14px",
+                borderRadius: "8px",
+                fontSize: "13px",
+                fontWeight: 500,
+                background: "transparent",
+                border: "1.5px solid #fad0d0",
+                color: "#c0392b",
+                cursor: "pointer",
+              }}
+            >
+              Delete
+            </button>
+          </div>
+        </div>
+
+        {/* TABS */}
+        <div
+          className="no-print"
+          style={{ display: "flex", gap: "4px", marginBottom: "24px" }}
+        >
+          {[
+            ["Overview", `#`],
+            ["Vaccines", `/pets/${id}/vaccines`],
+            ["Weight", `/pets/${id}/weight`],
+            ["Medical", `/pets/${id}/medical`],
+          ].map(([label, href]) => (
+            <Link
+              key={label}
+              href={href}
+              className="tab-btn"
+              style={{
+                padding: "8px 16px",
+                borderRadius: "8px",
+                fontSize: "14px",
+                fontWeight: 500,
+                color: label === "Overview" ? "#0e7c74" : "#4a6968",
+                background: label === "Overview" ? "white" : "transparent",
+                border:
+                  label === "Overview"
+                    ? "1px solid #e4eaeb"
+                    : "1px solid transparent",
+                textDecoration: "none",
+                transition: "all 0.15s",
+              }}
+            >
+              {label}
+            </Link>
+          ))}
+        </div>
+
+        {/* MAIN GRID */}
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "1fr 300px",
+            gap: "20px",
+          }}
+        >
+          <div>
+            {/* AI SUMMARY */}
+            <div
+              style={{
+                background: "#0a3d3a",
+                borderRadius: "16px",
+                padding: "24px",
+                marginBottom: "20px",
+              }}
+            >
+              <div
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "6px",
+                  background: "rgba(255,255,255,0.12)",
+                  borderRadius: "99px",
+                  padding: "4px 12px",
+                  fontSize: "12px",
+                  fontWeight: 600,
+                  color: "white",
+                  marginBottom: "14px",
                 }}
               >
-                必做事項清單
-              </h2>
+                <span
+                  style={{
+                    width: "6px",
+                    height: "6px",
+                    borderRadius: "50%",
+                    background: "#2ec4ba",
+                    display: "inline-block",
+                  }}
+                ></span>
+                AI Health Analysis
+                {analysisCreatedAt && (
+                  <span
+                    style={{ color: "rgba(255,255,255,0.4)", fontWeight: 400 }}
+                  >
+                    · {new Date(analysisCreatedAt).toLocaleDateString()}
+                  </span>
+                )}
+              </div>
+              {loadingAi ? (
+                <div
+                  style={{
+                    fontSize: "14px",
+                    color: "rgba(255,255,255,0.5)",
+                    lineHeight: 1.75,
+                    marginBottom: "18px",
+                  }}
+                >
+                  Analysing {pet.name}'s health data...
+                </div>
+              ) : summary ? (
+                <div
+                  style={{
+                    fontSize: "14px",
+                    color: "rgba(255,255,255,0.8)",
+                    lineHeight: 1.75,
+                    marginBottom: "18px",
+                  }}
+                >
+                  {summary}
+                </div>
+              ) : (
+                <div
+                  style={{
+                    fontSize: "14px",
+                    color: "rgba(255,255,255,0.5)",
+                    lineHeight: 1.75,
+                    marginBottom: "18px",
+                  }}
+                >
+                  No analysis yet.
+                </div>
+              )}
+              <div
+                style={{
+                  display: "flex",
+                  gap: "8px",
+                  flexWrap: "wrap" as const,
+                }}
+              >
+                <button
+                  onClick={() => setShowFull(!showFull)}
+                  style={{
+                    padding: "8px 16px",
+                    borderRadius: "8px",
+                    fontSize: "13px",
+                    fontWeight: 500,
+                    background: "white",
+                    color: "#0e5c57",
+                    border: "none",
+                    cursor: "pointer",
+                  }}
+                >
+                  {showFull ? "Hide full report" : "View full report"}
+                </button>
+                <button
+                  onClick={handleRefreshAi}
+                  disabled={loadingAi}
+                  style={{
+                    padding: "8px 16px",
+                    borderRadius: "8px",
+                    fontSize: "13px",
+                    fontWeight: 500,
+                    background: "transparent",
+                    color: "rgba(255,255,255,0.7)",
+                    border: "1px solid rgba(255,255,255,0.2)",
+                    cursor: "pointer",
+                  }}
+                >
+                  {loadingAi ? "Analysing..." : "Re-analyse"}
+                </button>
+                {showFull && (
+                  <button
+                    onClick={() => window.print()}
+                    style={{
+                      padding: "8px 16px",
+                      borderRadius: "8px",
+                      fontSize: "13px",
+                      fontWeight: 500,
+                      background: "transparent",
+                      color: "rgba(255,255,255,0.7)",
+                      border: "1px solid rgba(255,255,255,0.2)",
+                      cursor: "pointer",
+                    }}
+                  >
+                    Download PDF
+                  </button>
+                )}
+              </div>
+              {showFull && fullReport && (
+                <div
+                  style={{
+                    marginTop: "16px",
+                    padding: "16px",
+                    background: "rgba(255,255,255,0.08)",
+                    borderRadius: "10px",
+                    fontSize: "13px",
+                    color: "rgba(255,255,255,0.7)",
+                    lineHeight: 1.75,
+                  }}
+                >
+                  {fullReport}
+                </div>
+              )}
+            </div>
 
-              <div style={{ display: "flex", gap: "20px" }}>
-                {/* 一次性 */}
-                <div style={{ flex: 1 }}>
+            {/* OVERALL HEALTH RISK */}
+            {checklist.length > 0 && (
+              <div
+                style={{
+                  background: "white",
+                  borderRadius: "16px",
+                  border: "1px solid #e4eaeb",
+                  padding: "24px",
+                  marginBottom: "20px",
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: "15px",
+                    fontWeight: 600,
+                    color: "#0f2423",
+                    marginBottom: "18px",
+                  }}
+                >
+                  Overall Health Risk
+                </div>
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "auto 1fr",
+                    gap: "24px",
+                    alignItems: "center",
+                  }}
+                >
                   <div
                     style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      marginBottom: "6px",
+                      position: "relative",
+                      width: "100px",
+                      height: "100px",
                     }}
                   >
-                    <p
-                      style={{ fontSize: "13px", color: "#9ca3af", margin: 0 }}
+                    <svg
+                      width="100"
+                      height="100"
+                      style={{ transform: "rotate(-90deg)" }}
                     >
-                      一次性
-                    </p>
-                    <p
-                      style={{ fontSize: "13px", color: "#9ca3af", margin: 0 }}
-                    >
-                      {
-                        checklist.filter(
-                          (i) => i.type === "one_time" && i.is_completed,
-                        ).length
-                      }{" "}
-                      / {checklist.filter((i) => i.type === "one_time").length}
-                    </p>
-                  </div>
-                  <div
-                    style={{
-                      height: "6px",
-                      background: "#374151",
-                      borderRadius: "99px",
-                      marginBottom: "12px",
-                    }}
-                  >
+                      <circle
+                        cx="50"
+                        cy="50"
+                        r="40"
+                        fill="none"
+                        stroke="#e4eaeb"
+                        strokeWidth="10"
+                      />
+                      <circle
+                        cx="50"
+                        cy="50"
+                        r="40"
+                        fill="none"
+                        stroke={riskColor}
+                        strokeWidth="10"
+                        strokeDasharray={circumference}
+                        strokeDashoffset={dashOffset}
+                        strokeLinecap="round"
+                      />
+                    </svg>
                     <div
                       style={{
-                        height: "100%",
-                        borderRadius: "99px",
-                        background: "#3dbfa0",
-                        width: `${Math.round((checklist.filter((i) => i.type === "one_time" && i.is_completed).length / checklist.filter((i) => i.type === "one_time").length) * 100)}%`,
+                        position: "absolute",
+                        inset: 0,
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        justifyContent: "center",
                       }}
-                    />
-                  </div>
-                  {checklist
-                    .filter((i) => i.type === "one_time")
-                    .map((item) => (
+                    >
                       <div
-                        key={item.id}
-                        onClick={() =>
-                          handleToggle(item.id, !item.is_completed)
-                        }
                         style={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: "10px",
-                          padding: "8px 0",
-                          cursor: "pointer",
-                          borderBottom: "1px solid #374151",
+                          fontSize: "16px",
+                          fontWeight: 700,
+                          color: riskColor,
                         }}
                       >
-                        <div
-                          style={{
-                            width: "18px",
-                            height: "18px",
-                            borderRadius: "4px",
-                            flexShrink: 0,
-                            background: item.is_completed
-                              ? "#3dbfa0"
-                              : "transparent",
-                            border: `1.5px solid ${item.is_completed ? "#3dbfa0" : "#6b7280"}`,
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                          }}
-                        >
-                          {item.is_completed && (
-                            <span style={{ color: "white", fontSize: "12px" }}>
-                              ✓
-                            </span>
-                          )}
-                        </div>
-                        <span
-                          style={{
-                            fontSize: "14px",
-                            color: item.is_completed ? "#6b7280" : "white",
-                            textDecoration: item.is_completed
-                              ? "line-through"
-                              : "none",
-                          }}
-                        >
-                          {item.label}
-                        </span>
+                        {riskLevel}
                       </div>
-                    ))}
-                </div>
-
-                {/* 分隔線 */}
-                <div style={{ width: "1px", background: "#374151" }} />
-
-                {/* 每年定期 */}
-                <div style={{ flex: 1 }}>
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      marginBottom: "6px",
-                    }}
-                  >
-                    <p
-                      style={{ fontSize: "13px", color: "#9ca3af", margin: 0 }}
-                    >
-                      每年定期（{new Date().getFullYear()}）
-                    </p>
-                    <p
-                      style={{ fontSize: "13px", color: "#9ca3af", margin: 0 }}
-                    >
-                      {
-                        checklist.filter(
-                          (i) =>
-                            i.type === "annual" &&
-                            i.completed_at &&
-                            new Date(i.completed_at).getFullYear() ===
-                              new Date().getFullYear(),
-                        ).length
-                      }{" "}
-                      / {checklist.filter((i) => i.type === "annual").length}
-                    </p>
+                      <div
+                        style={{
+                          fontSize: "10px",
+                          fontWeight: 600,
+                          textTransform: "uppercase" as const,
+                          letterSpacing: "0.06em",
+                          color: "#4a6968",
+                        }}
+                      >
+                        Risk
+                      </div>
+                    </div>
                   </div>
-                  <div
-                    style={{
-                      height: "6px",
-                      background: "#374151",
-                      borderRadius: "99px",
-                      marginBottom: "12px",
-                    }}
-                  >
+                  <div>
                     <div
                       style={{
-                        height: "100%",
-                        borderRadius: "99px",
-                        background: "#3dbfa0",
-                        width: `${Math.round((checklist.filter((i) => i.type === "annual" && i.completed_at && new Date(i.completed_at).getFullYear() === new Date().getFullYear()).length / checklist.filter((i) => i.type === "annual").length) * 100)}%`,
+                        fontSize: "18px",
+                        fontWeight: 600,
+                        color: "#0f2423",
+                        marginBottom: "6px",
                       }}
-                    />
+                    >
+                      {completionRate}% health tasks completed
+                    </div>
+                    <div
+                      style={{
+                        fontSize: "13px",
+                        color: "#4a6968",
+                        lineHeight: 1.6,
+                      }}
+                    >
+                      {oneTimeDone}/{oneTimeTotal} one-time tasks done ·{" "}
+                      {annualDone}/{annualTotal} annual tasks done for{" "}
+                      {new Date().getFullYear()}
+                    </div>
                   </div>
-                  {checklist
-                    .filter((i) => i.type === "annual")
-                    .map((item) => {
-                      const completedThisYear = !!(
-                        item.completed_at &&
-                        new Date(item.completed_at).getFullYear() ===
-                          new Date().getFullYear()
-                      );
-                      return (
+                </div>
+              </div>
+            )}
+
+            {/* CHECKLIST */}
+            {checklist.length > 0 && (
+              <div
+                style={{
+                  background: "white",
+                  borderRadius: "16px",
+                  border: "1px solid #e4eaeb",
+                  padding: "24px",
+                  marginBottom: "20px",
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: "15px",
+                    fontWeight: 600,
+                    color: "#0f2423",
+                    marginBottom: "18px",
+                  }}
+                >
+                  Health Checklist
+                </div>
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "1fr 1fr",
+                    gap: "0",
+                  }}
+                >
+                  {/* One-time */}
+                  <div style={{ paddingRight: "20px" }}>
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        marginBottom: "6px",
+                      }}
+                    >
+                      <span
+                        style={{
+                          fontSize: "11px",
+                          fontWeight: 600,
+                          textTransform: "uppercase" as const,
+                          letterSpacing: "0.08em",
+                          color: "#4a6968",
+                        }}
+                      >
+                        One-time
+                      </span>
+                      <span style={{ fontSize: "12px", color: "#4a6968" }}>
+                        {oneTimeDone} / {oneTimeTotal}
+                      </span>
+                    </div>
+                    <div
+                      style={{
+                        height: "4px",
+                        background: "#e4eaeb",
+                        borderRadius: "99px",
+                        marginBottom: "14px",
+                      }}
+                    >
+                      <div
+                        style={{
+                          height: "100%",
+                          background: "#0E7C86",
+                          borderRadius: "99px",
+                          width: `${oneTimeTotal > 0 ? Math.round((oneTimeDone / oneTimeTotal) * 100) : 0}%`,
+                        }}
+                      />
+                    </div>
+                    {checklist
+                      .filter((i) => i.type === "one_time")
+                      .map((item) => (
                         <div
                           key={item.id}
+                          className="cl-item"
                           onClick={() =>
-                            handleToggle(item.id, !completedThisYear)
+                            handleToggle(item.id, !item.is_completed)
                           }
                           style={{
                             display: "flex",
                             alignItems: "center",
                             gap: "10px",
-                            padding: "8px 0",
+                            padding: "8px 6px",
+                            borderBottom: "1px solid #F1F4F4",
                             cursor: "pointer",
-                            borderBottom: "1px solid #374151",
+                            borderRadius: "6px",
                           }}
                         >
                           <div
                             style={{
                               width: "18px",
                               height: "18px",
-                              borderRadius: "4px",
+                              borderRadius: "5px",
                               flexShrink: 0,
-                              background: completedThisYear
-                                ? "#3dbfa0"
+                              background: item.is_completed
+                                ? "#0E7C86"
                                 : "transparent",
-                              border: `1.5px solid ${completedThisYear ? "#3dbfa0" : "#6b7280"}`,
+                              border: `1.5px solid ${item.is_completed ? "#0E7C86" : "#e4eaeb"}`,
                               display: "flex",
                               alignItems: "center",
                               justifyContent: "center",
+                              fontSize: "11px",
+                              color: "white",
                             }}
                           >
-                            {completedThisYear && (
-                              <span
-                                style={{ color: "white", fontSize: "12px" }}
-                              >
-                                ✓
-                              </span>
-                            )}
+                            {item.is_completed && "✓"}
                           </div>
                           <span
                             style={{
-                              fontSize: "14px",
-                              color: completedThisYear ? "#6b7280" : "white",
-                              textDecoration: completedThisYear
+                              fontSize: "13px",
+                              color: item.is_completed ? "#4a6968" : "#2d4a49",
+                              textDecoration: item.is_completed
                                 ? "line-through"
                                 : "none",
                             }}
@@ -615,511 +852,455 @@ export default function PetDetailPage({
                             {item.label}
                           </span>
                         </div>
-                      );
-                    })}
+                      ))}
+                  </div>
+                  {/* Annual */}
+                  <div
+                    style={{
+                      paddingLeft: "20px",
+                      borderLeft: "1px solid #e4eaeb",
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        marginBottom: "6px",
+                      }}
+                    >
+                      <span
+                        style={{
+                          fontSize: "11px",
+                          fontWeight: 600,
+                          textTransform: "uppercase" as const,
+                          letterSpacing: "0.08em",
+                          color: "#4a6968",
+                        }}
+                      >
+                        Annual ({new Date().getFullYear()})
+                      </span>
+                      <span style={{ fontSize: "12px", color: "#4a6968" }}>
+                        {annualDone} / {annualTotal}
+                      </span>
+                    </div>
+                    <div
+                      style={{
+                        height: "4px",
+                        background: "#e4eaeb",
+                        borderRadius: "99px",
+                        marginBottom: "14px",
+                      }}
+                    >
+                      <div
+                        style={{
+                          height: "100%",
+                          background: "#0E7C86",
+                          borderRadius: "99px",
+                          width: `${annualTotal > 0 ? Math.round((annualDone / annualTotal) * 100) : 0}%`,
+                        }}
+                      />
+                    </div>
+                    {checklist
+                      .filter((i) => i.type === "annual")
+                      .map((item) => {
+                        const completedThisYear = !!(
+                          item.completed_at &&
+                          new Date(item.completed_at).getFullYear() ===
+                            new Date().getFullYear()
+                        );
+                        return (
+                          <div
+                            key={item.id}
+                            className="cl-item"
+                            onClick={() =>
+                              handleToggle(item.id, !completedThisYear)
+                            }
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: "10px",
+                              padding: "8px 6px",
+                              borderBottom: "1px solid #F1F4F4",
+                              cursor: "pointer",
+                              borderRadius: "6px",
+                            }}
+                          >
+                            <div
+                              style={{
+                                width: "18px",
+                                height: "18px",
+                                borderRadius: "5px",
+                                flexShrink: 0,
+                                background: completedThisYear
+                                  ? "#0E7C86"
+                                  : "transparent",
+                                border: `1.5px solid ${completedThisYear ? "#0E7C86" : "#e4eaeb"}`,
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                fontSize: "11px",
+                                color: "white",
+                              }}
+                            >
+                              {completedThisYear && "✓"}
+                            </div>
+                            <span
+                              style={{
+                                fontSize: "13px",
+                                color: completedThisYear
+                                  ? "#4a6968"
+                                  : "#2d4a49",
+                                textDecoration: completedThisYear
+                                  ? "line-through"
+                                  : "none",
+                              }}
+                            >
+                              {item.label}
+                            </span>
+                          </div>
+                        );
+                      })}
+                  </div>
                 </div>
               </div>
+            )}
+
+            {/* WEIGHT CHART */}
+            {weightRecords.length > 0 && (
+              <div
+                style={{
+                  background: "white",
+                  borderRadius: "16px",
+                  border: "1px solid #e4eaeb",
+                  padding: "24px",
+                  marginBottom: "20px",
+                }}
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    marginBottom: "18px",
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: "15px",
+                      fontWeight: 600,
+                      color: "#0f2423",
+                    }}
+                  >
+                    Weight Trend
+                  </div>
+                  <span style={{ fontSize: "13px", color: "#4a6968" }}>
+                    Current: {weightRecords[weightRecords.length - 1]?.weight}{" "}
+                    kg
+                  </span>
+                </div>
+                <div style={{ height: "200px" }}>
+                  <Line
+                    data={{
+                      labels: weightRecords.map((w) => w.date.split("T")[0]),
+                      datasets: [
+                        {
+                          label: "Weight (kg)",
+                          data: weightRecords.map((w) => w.weight),
+                          borderColor: "#0E7C86",
+                          backgroundColor: "rgba(14,124,134,0.08)",
+                          tension: 0.3,
+                          pointBackgroundColor: "#0E7C86",
+                          pointRadius: 4,
+                        },
+                        ...(pet.target_weight
+                          ? [
+                              {
+                                label: "Target (kg)",
+                                data: weightRecords.map(
+                                  () => pet.target_weight,
+                                ),
+                                borderColor: "#e4eaeb",
+                                borderDash: [4, 4],
+                                tension: 0,
+                                pointRadius: 0,
+                              },
+                            ]
+                          : []),
+                      ],
+                    }}
+                    options={{
+                      maintainAspectRatio: false,
+                      plugins: { legend: { display: false } },
+                      scales: {
+                        y: { grid: { color: "#f0fafa" } },
+                        x: { grid: { display: false } },
+                      },
+                    }}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* PDF 報告區 */}
+            <div
+              id="pdf-report"
+              style={{
+                background: "white",
+                borderRadius: "16px",
+                border: "1px solid #e4eaeb",
+                padding: "24px",
+              }}
+            >
+              <div
+                style={{
+                  fontSize: "15px",
+                  fontWeight: 600,
+                  color: "#0f2423",
+                  marginBottom: "16px",
+                }}
+              >
+                {pet.name}'s Health Report
+              </div>
+              <div
+                style={{
+                  fontSize: "12px",
+                  color: "#4a6968",
+                  marginBottom: "16px",
+                }}
+              >
+                Generated: {new Date().toLocaleDateString()}
+              </div>
+              {vaccineRecords.length > 0 && (
+                <div style={{ marginBottom: "16px" }}>
+                  <div
+                    style={{
+                      fontSize: "13px",
+                      fontWeight: 600,
+                      color: "#0f2423",
+                      marginBottom: "8px",
+                      textTransform: "uppercase" as const,
+                      letterSpacing: "0.06em",
+                    }}
+                  >
+                    Vaccines
+                  </div>
+                  {vaccineRecords.map((v) => (
+                    <div
+                      key={v.id}
+                      style={{
+                        padding: "8px 0",
+                        borderBottom: "1px solid #F1F4F4",
+                        fontSize: "13px",
+                        color: "#2d4a49",
+                      }}
+                    >
+                      <strong>{v.vaccine_name}</strong> — {v.date.split("T")[0]}
+                      {v.next_due_date &&
+                        ` · Next: ${v.next_due_date.split("T")[0]}`}
+                      {v.clinic && ` · ${v.clinic}`}
+                    </div>
+                  ))}
+                </div>
+              )}
+              {medicalRecords.length > 0 && (
+                <div>
+                  <div
+                    style={{
+                      fontSize: "13px",
+                      fontWeight: 600,
+                      color: "#0f2423",
+                      marginBottom: "8px",
+                      textTransform: "uppercase" as const,
+                      letterSpacing: "0.06em",
+                    }}
+                  >
+                    Medical Records
+                  </div>
+                  {medicalRecords.map((m) => (
+                    <div
+                      key={m.id}
+                      style={{
+                        padding: "8px 0",
+                        borderBottom: "1px solid #F1F4F4",
+                        fontSize: "13px",
+                        color: "#2d4a49",
+                      }}
+                    >
+                      <strong>{m.brief_name}</strong> — {m.date.split("T")[0]}
+                      {m.clinic && ` · ${m.clinic}`}
+                      {m.diagnosis && ` · ${m.diagnosis}`}
+                      {m.cost && ` · NTD ${m.cost}`}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
-          )}
-          {/* AI 對話 */}
-          <div
-            style={{
-              marginBottom: "24px",
-              background: "#1f2937",
-              borderRadius: "10px",
-              padding: "20px",
-            }}
-          >
-            <h2
-              style={{
-                fontSize: "16px",
-                fontWeight: "bold",
-                marginBottom: "16px",
-              }}
-            >
-              詢問 AI 助理
-            </h2>
-            <div style={{ display: "flex", gap: "8px", marginBottom: "16px" }}>
-              <input
-                type="text"
-                value={chatQuestion}
-                onChange={(e) => setChatQuestion(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleChat()}
-                placeholder={`問關於 ${pet.name} 的健康問題...`}
-                style={{
-                  flex: 1,
-                  padding: "10px 14px",
-                  borderRadius: "8px",
-                  border: "1px solid #374151",
-                  background: "#111827",
-                  color: "white",
-                  fontSize: "14px",
-                }}
-              />
-              <button
-                onClick={handleChat}
-                disabled={loadingChat || !chatQuestion.trim()}
-                style={{
-                  background: "#4b5563",
-                  color: "white",
-                  padding: "10px 20px",
-                  borderRadius: "8px",
-                  border: "none",
-                  cursor: "pointer",
-                  fontSize: "14px",
-                }}
-              >
-                {loadingChat ? "思考中..." : "送出"}
-              </button>
-            </div>
-            {chatAnswer && (
+          </div>
+
+          {/* SIDEBAR */}
+          <div className="no-print">
+            {/* NEXT APPOINTMENT */}
+            {nextVaccine && (
               <div
                 style={{
-                  background: "#111827",
-                  borderRadius: "8px",
-                  padding: "16px",
-                }}
-              >
-                <p style={{ color: "#d1d5db", lineHeight: "1.8", margin: 0 }}>
-                  {chatAnswer}
-                </p>
-              </div>
-            )}
-          </div>
-
-          <button
-            onClick={handleRefreshAi}
-            disabled={loadingAi}
-            style={{
-              background: "#4b5563",
-              color: "white",
-              padding: "10px 20px",
-              borderRadius: "8px",
-              border: "none",
-              cursor: "pointer",
-              fontSize: "14px",
-            }}
-          >
-            {loadingAi ? "分析中..." : "重新分析AI健康"}
-          </button>
-          {analysisCreatedAt && (
-            <span style={{ fontSize: "13px", color: "#9ca3af" }}>
-              上次分析：{new Date(analysisCreatedAt).toLocaleDateString()}
-            </span>
-          )}
-        </div>
-      )}
-      {/* 寵物健康報告 */}
-      <div
-        id="pdf-report"
-        style={{
-          background: "#ffffff",
-          color: "#000000",
-          padding: "20px",
-          borderRadius: "10px",
-        }}
-      >
-        <h2 style={{ color: "#000", marginBottom: "4px" }}>
-          {pet.name}'s Heath Dashboard
-        </h2>
-        <p style={{ color: "#555", fontSize: "13px", marginBottom: "16px" }}>
-          Created At：{new Date().toLocaleDateString()}
-        </p>
-
-        {/* 寵物基本資料 */}
-        <div
-          style={{
-            borderBottom: "1px solid #eee",
-            paddingBottom: "12px",
-            marginBottom: "16px",
-          }}
-        >
-          <p style={{ color: "#333", fontSize: "13px", margin: "4px 0" }}>
-            Name：{pet.name}
-          </p>
-          <p style={{ color: "#333", fontSize: "13px", margin: "4px 0" }}>
-            Species：{pet.species}
-          </p>
-          {pet.breed && (
-            <p style={{ color: "#333", fontSize: "13px", margin: "4px 0" }}>
-              Breed：{pet.breed}
-            </p>
-          )}
-          {pet.gender && (
-            <p style={{ color: "#333", fontSize: "13px", margin: "4px 0" }}>
-              Gender：{pet.gender}
-            </p>
-          )}
-
-          <p style={{ color: "#333", fontSize: "13px", margin: "4px 0" }}>
-            Birthday：{new Date(pet.birthdate).toLocaleDateString()} · {age}{" "}
-            years old
-          </p>
-          {pet.chip_number && (
-            <p style={{ color: "#333", fontSize: "13px", margin: "4px 0" }}>
-              晶片號碼：{pet.chip_number}
-            </p>
-          )}
-          {pet.target_weight && (
-            <p style={{ color: "#333", fontSize: "13px", margin: "4px 0" }}>
-              目標體重：{pet.target_weight} kg
-            </p>
-          )}
-        </div>
-
-        {summary && (
-          <div
-            style={{
-              background: "#111827",
-              border: "1px solid #1f2937",
-              borderRadius: "10px",
-              padding: "20px",
-              marginBottom: "24px",
-            }}
-          >
-            <h2
-              style={{
-                fontSize: "16px",
-                fontWeight: "bold",
-                marginBottom: "12px",
-                color: "white",
-              }}
-            >
-              AI 健康摘要
-            </h2>
-            <p style={{ color: "#d1d5db", lineHeight: "1.8", margin: 0 }}>
-              {summary}
-            </p>
-            <button
-              onClick={() => setShowFull(!showFull)}
-              style={{
-                background: "transparent",
-                color: "#9ca3af",
-                border: "1px solid #374151",
-                padding: "6px 14px",
-                borderRadius: "6px",
-                cursor: "pointer",
-                fontSize: "13px",
-                marginTop: "12px",
-              }}
-            >
-              {showFull ? "收起報告" : "查看完整報告"}
-            </button>
-
-            {showFull && (
-              <button
-                onClick={handleDownloadPdf}
-                style={{
-                  background: "#4b5563",
+                  background: "#0e5c57",
+                  borderRadius: "16px",
+                  padding: "20px",
+                  marginBottom: "16px",
                   color: "white",
-                  border: "none",
-                  padding: "6px 14px",
-                  borderRadius: "6px",
-                  cursor: "pointer",
-                  fontSize: "13px",
-                  marginTop: "8px",
-                  marginLeft: "8px",
                 }}
               >
-                下載 PDF
-              </button>
-            )}
-            {showFull && (
-              <p
-                style={{ color: "#9ca3af", lineHeight: "2", marginTop: "12px" }}
-              >
-                {fullReport}
-              </p>
-            )}
-          </div>
-        )}
-
-        {/*疫苗紀錄 */}
-        {vaccineRecords.length > 0 && (
-          <div style={{ marginBottom: "16px" }}>
-            <h3 style={{ color: "#000" }}>疫苗紀錄</h3>
-            {vaccineRecords.map((v) => (
-              <div
-                key={v.id}
-                style={{
-                  borderBottom: "1px solid #eee",
-                  padding: "6px 0",
-                  fontSize: "13px",
-                  color: "#333",
-                }}
-              >
-                <strong>{v.vaccine_name}</strong> — {v.date.split("T")[0]}
-                {v.next_due_date && ` · 下次：${v.next_due_date.split("T")[0]}`}
-                {v.clinic && ` · ${v.clinic}`}
+                <div
+                  style={{
+                    fontSize: "11px",
+                    fontWeight: 600,
+                    textTransform: "uppercase" as const,
+                    letterSpacing: "0.1em",
+                    color: "rgba(255,255,255,0.5)",
+                    marginBottom: "12px",
+                  }}
+                >
+                  Next Appointment
+                </div>
+                <div
+                  style={{
+                    fontFamily: "Fraunces, serif",
+                    fontSize: "28px",
+                    fontWeight: 600,
+                    lineHeight: 1,
+                    marginBottom: "4px",
+                  }}
+                >
+                  {new Date(nextVaccine.next_due_date!).toLocaleDateString(
+                    "en",
+                    { month: "short", day: "numeric" },
+                  )}
+                </div>
+                <div
+                  style={{
+                    fontSize: "14px",
+                    color: "rgba(255,255,255,0.7)",
+                    marginBottom: "12px",
+                  }}
+                >
+                  {nextVaccine.vaccine_name}
+                </div>
+                {nextVaccine.clinic && (
+                  <div
+                    style={{
+                      background: "rgba(255,255,255,0.1)",
+                      borderRadius: "10px",
+                      padding: "10px 12px",
+                      fontSize: "13px",
+                    }}
+                  >
+                    📍 {nextVaccine.clinic}
+                  </div>
+                )}
               </div>
-            ))}
-          </div>
-        )}
+            )}
 
-        {/*醫療紀錄 */}
-        {medicalRecords.length > 0 && (
-          <div style={{ marginBottom: "16px" }}>
-            <h3 style={{ color: "#000" }}>就醫紀錄</h3>
-            {medicalRecords.map((m) => (
-              <div
-                key={m.id}
-                style={{
-                  borderBottom: "1px solid #eee",
-                  padding: "6px 0",
-                  fontSize: "13px",
-                  color: "#333",
-                }}
-              >
-                <strong>{m.brief_name}</strong> — {m.date.split("T")[0]}
-                {m.clinic && ` · ${m.clinic}`}
-                {m.diagnosis && ` · 診斷：${m.diagnosis}`}
-                {m.cost && ` · 費用：${m.cost} 元`}
-              </div>
-            ))}
-          </div>
-        )}
-        {/* 必做事項完成率圓餅圖 */}
-
-        {checklist.length > 0 &&
-          (weightRecords.length > 0 ||
-            medicalRecords.length > 0 ||
-            vaccineRecords.length > 0) && (
+            {/* AI CHAT */}
             <div
               style={{
-                display: "grid",
-                gridTemplateColumns: "1fr 1fr",
-                gap: "16px",
-                marginBottom: "16px",
+                background: "white",
+                border: "1px solid #e4eaeb",
+                borderRadius: "16px",
+                padding: "20px",
               }}
             >
-              {/* 一次性完成率 */}
               <div
                 style={{
-                  background: "#1f2937",
-                  borderRadius: "10px",
-                  padding: "16px",
-                  textAlign: "center",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  marginBottom: "4px",
                 }}
               >
-                <p
+                <span style={{ fontSize: "16px" }}>✦</span>
+                <div
                   style={{
-                    fontSize: "13px",
-                    color: "#9ca3af",
-                    margin: "0 0 12px",
+                    fontSize: "14px",
+                    fontWeight: 600,
+                    color: "#0f2423",
                   }}
                 >
-                  一次性完成率
-                </p>
-                <div style={{ height: "160px" }}>
-                  <Pie
-                    data={{
-                      datasets: [
-                        {
-                          data: [
-                            checklist.filter(
-                              (i) => i.type === "one_time" && i.is_completed,
-                            ).length,
-                            checklist.filter(
-                              (i) => i.type === "one_time" && !i.is_completed,
-                            ).length,
-                          ],
-                          backgroundColor: ["#3dbfa0", "#374151"],
-                          borderWidth: 0,
-                        },
-                      ],
-                    }}
-                    options={{
-                      plugins: {
-                        legend: { display: false },
-                        tooltip: { enabled: false },
-                      },
-                    }}
-                  />
+                  Ask AI about {pet.name}
                 </div>
-                <p
-                  style={{
-                    fontSize: "20px",
-                    fontWeight: "bold",
-                    margin: "12px 0 4px",
-                    color: "black",
-                  }}
-                >
-                  {Math.round(
-                    (checklist.filter(
-                      (i) => i.type === "one_time" && i.is_completed,
-                    ).length /
-                      checklist.filter((i) => i.type === "one_time").length) *
-                      100,
-                  )}
-                  %
-                </p>
-                <p style={{ fontSize: "12px", color: "#6b7280", margin: 0 }}>
-                  {
-                    checklist.filter(
-                      (i) => i.type === "one_time" && i.is_completed,
-                    ).length
-                  }{" "}
-                  / {checklist.filter((i) => i.type === "one_time").length} 完成
-                </p>
               </div>
-
-              {/* 今年定期完成率 */}
               <div
                 style={{
-                  background: "#1f2937",
-                  borderRadius: "10px",
-                  padding: "16px",
-                  textAlign: "center",
+                  fontSize: "13px",
+                  color: "#4a6968",
+                  marginBottom: "14px",
                 }}
               >
-                <p
-                  style={{
-                    fontSize: "13px",
-                    color: "#9ca3af",
-                    margin: "0 0 12px",
-                  }}
-                >
-                  今年定期完成率
-                </p>
-                <div style={{ height: "160px" }}>
-                  <Pie
-                    data={{
-                      datasets: [
-                        {
-                          data: [
-                            checklist.filter(
-                              (i) =>
-                                i.type === "annual" &&
-                                i.completed_at &&
-                                new Date(i.completed_at).getFullYear() ===
-                                  new Date().getFullYear(),
-                            ).length,
-                            checklist.filter(
-                              (i) =>
-                                i.type === "annual" &&
-                                !(
-                                  i.completed_at &&
-                                  new Date(i.completed_at).getFullYear() ===
-                                    new Date().getFullYear()
-                                ),
-                            ).length,
-                          ],
-                          backgroundColor: ["#3dbfa0", "#374151"],
-                          borderWidth: 0,
-                        },
-                      ],
-                    }}
-                    options={{
-                      plugins: {
-                        legend: { display: false },
-                        tooltip: { enabled: false },
-                      },
-                    }}
-                  />
-                </div>
-                <p
-                  style={{
-                    fontSize: "20px",
-                    fontWeight: "bold",
-                    margin: "12px 0 4px",
-                    color: "black",
-                  }}
-                >
-                  {Math.round(
-                    (checklist.filter(
-                      (i) =>
-                        i.type === "annual" &&
-                        i.completed_at &&
-                        new Date(i.completed_at).getFullYear() ===
-                          new Date().getFullYear(),
-                    ).length /
-                      checklist.filter((i) => i.type === "annual").length) *
-                      100,
-                  )}
-                  %
-                </p>
-                <p style={{ fontSize: "12px", color: "#6b7280", margin: 0 }}>
-                  {
-                    checklist.filter(
-                      (i) =>
-                        i.type === "annual" &&
-                        i.completed_at &&
-                        new Date(i.completed_at).getFullYear() ===
-                          new Date().getFullYear(),
-                    ).length
-                  }{" "}
-                  / {checklist.filter((i) => i.type === "annual").length} 完成
-                </p>
+                Get instant health insights
               </div>
-            </div>
-          )}
 
-        {/*體重趨勢圖 */}
-        {weightRecords.length > 0 && (
-          <div
-            style={{
-              background: "#111827",
-              border: "1px solid #1f2937",
-              borderRadius: "10px",
-              padding: "20px",
-            }}
-          >
-            <h2
-              style={{
-                fontSize: "16px",
-                fontWeight: "bold",
-                marginBottom: "16px",
-                color: "white",
-              }}
-            >
-              體重趨勢
-            </h2>
-            <div style={{ height: "250px" }}>
-              <Line
-                data={{
-                  labels: weightRecords.map((w) => w.date.split("T")[0]),
-                  datasets: [
-                    {
-                      label: "實際體重(kg)",
-                      data: weightRecords.map((w) => w.weight),
-                      borderColor: "rgb(75, 192, 192)",
-                      tension: 0.1,
-                    },
-                    {
-                      label: "目標體重(kg)",
-                      data: weightRecords.map(() => pet.target_weight),
-                      borderColor: "#FF2D2D",
-                      tension: 0.1,
-                    },
-                  ],
+              <div
+                style={{
+                  display: "flex",
+                  gap: "8px",
+                  marginBottom: chatAnswer ? "12px" : "0",
                 }}
-                options={{
-                  maintainAspectRatio: false,
-                  plugins: {
-                    tooltip: {
-                      callbacks: {
-                        afterBody: (context) => {
-                          if (context[0].datasetIndex !== 0) return "";
-                          const actualWeight = context[0].parsed.y;
-                          const targetWeight = pet.target_weight;
-                          if (!targetWeight) return "";
-                          const diff = parseFloat(
-                            (actualWeight! - targetWeight).toFixed(1),
-                          );
-                          return diff > 0
-                            ? `和目標體重相差 +${diff} kg（超重）`
-                            : diff < 0
-                              ? `和目標體重相差 ${diff} kg（未達目標）`
-                              : `達成目標體重！`;
-                        },
-                      },
-                    },
-                  },
-                }}
-              />
+              >
+                <input
+                  type="text"
+                  value={chatQuestion}
+                  onChange={(e) => setChatQuestion(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleChat()}
+                  placeholder={`e.g. Is ${pet.name}'s weight healthy?`}
+                  style={{
+                    flex: 1,
+                    padding: "10px 12px",
+                    borderRadius: "8px",
+                    border: "1.5px solid #e4eaeb",
+                    background: "#F1F4F4",
+                    fontSize: "13px",
+                    fontFamily: "DM Sans, sans-serif",
+                    color: "#0f2423",
+                    outline: "none",
+                    boxSizing: "border-box" as const,
+                  }}
+                />
+                <button
+                  onClick={handleChat}
+                  disabled={loadingChat || !chatQuestion.trim()}
+                  style={{
+                    padding: "10px 14px",
+                    borderRadius: "8px",
+                    background: "#0E7C86",
+                    color: "white",
+                    border: "none",
+                    fontSize: "13px",
+                    fontWeight: 600,
+                    cursor: "pointer",
+                    whiteSpace: "nowrap" as const,
+                  }}
+                >
+                  {loadingChat ? "..." : "Ask"}
+                </button>
+              </div>
+
+              {chatAnswer && (
+                <div
+                  style={{
+                    background: "#f0fafa",
+                    border: "1px solid #e0f5f4",
+                    borderRadius: "10px",
+                    padding: "14px",
+                    fontSize: "13px",
+                    color: "#2d4a49",
+                    lineHeight: 1.7,
+                  }}
+                >
+                  {chatAnswer.replace(/#{1,3}\s/g, "").replace(/\*\*/g, "")}
+                </div>
+              )}
             </div>
           </div>
-        )}
+        </div>
       </div>
     </div>
   );
