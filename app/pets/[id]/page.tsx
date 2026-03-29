@@ -112,6 +112,9 @@ export default function PetDetailPage({
 
   useEffect(() => {
     if (!id) return;
+    const stored = localStorage.getItem(`chatHistory_${id}`);
+    if (stored) setChatHistory(JSON.parse(stored));
+
     fetch(`/api/pets/${id}`, { credentials: "include" })
       .then((r) => r.json())
       .then((data) => {
@@ -149,18 +152,41 @@ export default function PetDetailPage({
   }
 
   async function handleToggle(itemId: string, is_completed: boolean) {
+    // 先立刻更新畫面
+    setCheckList((prev) =>
+      prev.map((item) =>
+        item.id === itemId
+          ? {
+              ...item,
+              is_completed,
+              completed_at: is_completed ? new Date().toISOString() : null,
+            }
+          : item,
+      ),
+    );
+
+    // 背景打 API
     const res = await fetch(`/api/pets/${id}/checklist/${itemId}`, {
       method: "PATCH",
       credentials: "include",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ is_completed }),
     });
-    if (res.ok)
-      setCheckList(
-        checklist.map((item) =>
-          item.id === itemId ? { ...item, is_completed } : item,
+
+    // 如果失敗就還原
+    if (!res.ok) {
+      setCheckList((prev) =>
+        prev.map((item) =>
+          item.id === itemId
+            ? {
+                ...item,
+                is_completed: !is_completed,
+                completed_at: !is_completed ? new Date().toISOString() : null,
+              }
+            : item,
         ),
       );
+    }
   }
 
   async function loadAiSummary() {
@@ -198,10 +224,14 @@ export default function PetDetailPage({
     });
     const data = await res.json();
     const answer = data.answer.replace(/#{1,3}\s/g, "").replace(/\*\*/g, "");
-    setChatHistory((prev) => [
-      { question: chatQuestion, answer, open: true },
-      ...prev,
-    ]);
+    setChatHistory((prev) => {
+      const updated = [
+        { question: chatQuestion, answer, open: true },
+        ...prev,
+      ].slice(0, 10);
+      localStorage.setItem(`chatHistory_${id}`, JSON.stringify(updated));
+      return updated;
+    });
     setChatQuestion("");
     setLoadingChat(false);
   }
