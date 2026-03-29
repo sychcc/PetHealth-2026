@@ -19,6 +19,18 @@ const css = `
   .pet-card:hover { border-color: #2ec4ba !important; transform: translateY(-2px); box-shadow: 0 8px 24px rgba(14,91,83,0.1); }
   .add-card:hover { border-color: #2ec4ba !important; background: #f0fafa !important; }
   .featured-card:hover { border-color: #2ec4ba !important; }
+  .featured-card { display: grid; grid-template-columns: 400px 1fr; }
+  .featured-img { min-height: 280px; }
+  .pets-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  @media (max-width: 768px) {
+    .featured-card { grid-template-columns: 1fr !important; }
+    .featured-img { min-height: 220px !important; }
+    .pets-grid { grid-template-columns: repeat(2, 1fr) !important; }
+    .page-title { font-size: 28px !important; }
+  }
+  @media (max-width: 480px) {
+    .pets-grid { grid-template-columns: 1fr !important; }
+  }
 `;
 
 export default function PetsPage() {
@@ -101,12 +113,11 @@ export default function PetsPage() {
               border: "1px solid #e4eaeb",
               overflow: "hidden",
               marginBottom: "32px",
-              display: "grid",
-              gridTemplateColumns: "400px 1fr",
               transition: "border-color 0.2s",
             }}
           >
             <div
+              className="featured-img"
               style={{
                 background: featured.photo_url
                   ? "none"
@@ -114,7 +125,6 @@ export default function PetsPage() {
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                minHeight: "280px",
                 position: "relative",
                 overflow: "hidden",
               }}
@@ -254,11 +264,14 @@ export default function PetsPage() {
         </div>
 
         <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(3, 1fr)",
-            gap: "16px",
-          }}
+          className="pets-grid"
+          style={
+            {
+              // display: "grid",
+              // gridTemplateColumns: "repeat(3, 1fr)",
+              // gap: "16px",
+            }
+          }
         >
           {pets.map((pet) => (
             <Link

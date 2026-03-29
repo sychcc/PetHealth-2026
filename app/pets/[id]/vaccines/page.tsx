@@ -14,7 +14,59 @@ type Vaccine = {
   photo_url: string | null;
 };
 
-const css = `@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=Fraunces:ital,wght@0,300;0,600;1,600&display=swap');`;
+const css = `
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=Fraunces:ital,wght@0,300;0,600;1,600&display=swap');
+
+  * { box-sizing: border-box; }
+
+  .page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+    gap: 12px;
+  }
+
+  .add-btn {
+    padding: 10px 18px;
+    border-radius: 10px;
+    background: #0E7C86;
+    color: white;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 600;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .vaccine-info-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+
+  @media (max-width: 600px) {
+    .page-header {
+      flex-direction: row;
+      align-items: flex-start;
+    }
+    .add-btn {
+      padding: 8px 12px;
+      font-size: 13px;
+      border-radius: 8px;
+    }
+    .vaccine-info-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+    .breadcrumb {
+      padding: 0 16px !important;
+    }
+    .main-wrapper {
+      padding: 20px 16px !important;
+    }
+  }
+`;
 
 export default function VaccinesPage({
   params,
@@ -68,7 +120,10 @@ export default function VaccinesPage({
       }}
     >
       <style>{css}</style>
+
+      {/* BREADCRUMB */}
       <div
+        className="breadcrumb"
         style={{
           background: "white",
           borderBottom: "1px solid #e4eaeb",
@@ -96,17 +151,12 @@ export default function VaccinesPage({
       </div>
 
       <div
+        className="main-wrapper"
         style={{ maxWidth: "800px", margin: "0 auto", padding: "28px 24px" }}
       >
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            marginBottom: "24px",
-          }}
-        >
-          <div>
+        {/* PAGE HEADER */}
+        <div className="page-header">
+          <div style={{ minWidth: 0 }}>
             <div
               style={{
                 fontFamily: "Fraunces, serif",
@@ -128,22 +178,12 @@ export default function VaccinesPage({
               {vaccines.length} records for {petName}
             </div>
           </div>
-          <Link
-            href={`/pets/${id}/vaccines/create`}
-            style={{
-              padding: "10px 18px",
-              borderRadius: "10px",
-              background: "#0E7C86",
-              color: "white",
-              textDecoration: "none",
-              fontSize: "14px",
-              fontWeight: 600,
-            }}
-          >
+          <Link href={`/pets/${id}/vaccines/create`} className="add-btn">
             + Add Vaccine
           </Link>
         </div>
 
+        {/* VACCINE LIST */}
         {vaccines.length === 0 ? (
           <div
             style={{
@@ -177,15 +217,17 @@ export default function VaccinesPage({
                     justifyContent: "space-between",
                     alignItems: "flex-start",
                     marginBottom: "12px",
+                    gap: "8px",
                   }}
                 >
-                  <div>
+                  <div style={{ minWidth: 0 }}>
                     <div
                       style={{
                         fontSize: "17px",
                         fontWeight: 600,
                         color: "#0f2423",
                         marginBottom: "4px",
+                        wordBreak: "break-word",
                       }}
                     >
                       {v.vaccine_name}
@@ -201,6 +243,7 @@ export default function VaccinesPage({
                         borderRadius: "99px",
                         fontSize: "12px",
                         fontWeight: 600,
+                        flexShrink: 0,
                         background: isExpired(v.next_due_date)
                           ? "#fdeaea"
                           : isDueSoon(v.next_due_date)
@@ -221,14 +264,8 @@ export default function VaccinesPage({
                     </div>
                   )}
                 </div>
-                <div
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "repeat(3, 1fr)",
-                    gap: "8px",
-                    marginBottom: "12px",
-                  }}
-                >
+
+                <div className="vaccine-info-grid">
                   {v.next_due_date && (
                     <div
                       style={{
@@ -320,6 +357,7 @@ export default function VaccinesPage({
                     </div>
                   )}
                 </div>
+
                 <div style={{ display: "flex", gap: "8px" }}>
                   <Link
                     href={`/pets/${id}/vaccines/${v.id}/edit`}

@@ -5,6 +5,83 @@ import Link from "next/link";
 export default function HomePage() {
   const { data: session } = useSession();
 
+  const css = `
+    @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=Fraunces:ital,wght@0,300;0,600;1,600&display=swap');
+    
+    /* Hero 區域（預設左右排） */
+    .hero-section {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 64px;
+      align-items: center;
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 80px 48px;
+    }
+
+    /* 中間數據列 */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 32px;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    /* 功能列表-預設三欄 */
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1px;
+      background: #e4eaeb;
+      border: 1px solid #e4eaeb;
+      border-radius: 16px;
+      overflow: hidden;
+    }
+
+    /* RWD */
+    @media (max-width: 950px) {
+      .features-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    @media (max-width: 850px) {
+      .hero-section { 
+        grid-template-columns: 1fr; 
+        padding: 60px 24px;
+        text-align: center;
+        gap: 48px;
+      }
+      .hero-text-content {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+      .hero-title { font-size: 42px !important; }
+      .hero-desc { margin-left: auto !important; margin-right: auto !important; }
+      .stats-grid { grid-template-columns: repeat(2, 1fr); }
+      
+      /* Features 區塊置中 */
+      .features-container {
+        text-align: center !important;
+        padding: 60px 24px !important;
+      }
+      .features-header-desc {
+        margin: 0 auto 48px !important;
+      }
+      .feature-item {
+        text-align: center !important;
+      }
+    }
+
+    @media (max-width: 550px) {
+      .features-grid { grid-template-columns: 1fr; }
+      .stats-grid { grid-template-columns: 1fr; gap: 24px; }
+      .cta-box { padding: 48px 32px !important; text-align: center; justify-content: center !important; }
+      .cta-title { font-size: 32px !important; }
+      .hero-title { font-size: 36px !important; }
+    }
+  `;
+
   return (
     <div
       style={{
@@ -13,21 +90,11 @@ export default function HomePage() {
         minHeight: "100vh",
       }}
     >
-      <style>{`@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=Fraunces:ital,wght@0,300;0,600;1,600&display=swap');`}</style>
+      <style>{css}</style>
 
-      {/* HERO */}
-      <section
-        style={{
-          maxWidth: "1100px",
-          margin: "0 auto",
-          padding: "80px 48px",
-          display: "grid",
-          gridTemplateColumns: "1fr 1fr",
-          gap: "64px",
-          alignItems: "center",
-        }}
-      >
-        <div>
+      {/* HERO SECTION */}
+      <section className="hero-section">
+        <div className="hero-text-content">
           <div
             style={{
               display: "inline-flex",
@@ -53,7 +120,7 @@ export default function HomePage() {
                 fontSize: "11px",
                 fontWeight: 600,
                 letterSpacing: "0.1em",
-                textTransform: "uppercase" as const,
+                textTransform: "uppercase",
                 color: "#0E7C86",
               }}
             >
@@ -61,6 +128,7 @@ export default function HomePage() {
             </span>
           </div>
           <h1
+            className="hero-title"
             style={{
               fontFamily: "Fraunces, serif",
               fontSize: "56px",
@@ -77,6 +145,7 @@ export default function HomePage() {
             <em style={{ fontStyle: "italic", color: "#0E7C86" }}>forget</em>
           </h1>
           <p
+            className="hero-desc"
             style={{
               fontSize: "17px",
               color: "#4a6968",
@@ -89,7 +158,14 @@ export default function HomePage() {
             When was the last vaccine? Has the weight changed? What did the vet
             say last time? PetHealth keeps track of all of it ! :)
           </p>
-          <div style={{ display: "flex", gap: "12px" }}>
+          <div
+            style={{
+              display: "flex",
+              gap: "12px",
+              flexWrap: "wrap",
+              justifyContent: "inherit",
+            }}
+          >
             <Link
               href={session ? "/pets" : "/auth/signup"}
               style={{
@@ -133,6 +209,9 @@ export default function HomePage() {
             borderRadius: "20px",
             padding: "28px",
             boxShadow: "0 12px 40px rgba(14,91,83,0.14)",
+            width: "100%",
+            maxWidth: "440px",
+            margin: "0 auto",
           }}
         >
           <div
@@ -158,7 +237,7 @@ export default function HomePage() {
             >
               🐶
             </div>
-            <div style={{ flex: 1 }}>
+            <div style={{ flex: 1, textAlign: "left" }}>
               <div
                 style={{
                   fontFamily: "Fraunces, serif",
@@ -207,6 +286,7 @@ export default function HomePage() {
                   background: "#F1F4F4",
                   borderRadius: "12px",
                   padding: "14px 16px",
+                  textAlign: "left",
                 }}
               >
                 <div
@@ -235,6 +315,7 @@ export default function HomePage() {
               background: "#0a3d3a",
               borderRadius: "12px",
               padding: "16px",
+              textAlign: "left",
             }}
           >
             <div
@@ -273,31 +354,23 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* STATS */}
+      {/* STATS SECTION */}
       <div
         style={{
           background: "#f0fafa",
           borderTop: "1px solid #e0f5f4",
           borderBottom: "1px solid #e0f5f4",
-          padding: "40px 48px",
+          padding: "40px 24px",
         }}
       >
-        <div
-          style={{
-            maxWidth: "1100px",
-            margin: "0 auto",
-            display: "grid",
-            gridTemplateColumns: "repeat(4, 1fr)",
-            gap: "32px",
-          }}
-        >
+        <div className="stats-grid">
           {[
-            ["Vaccines", "Auto reminders when due"],
-            ["Weight", "Visual trend charts"],
-            ["AI", "Instant health Q&A"],
-            ["Email", "Appointment notifications"],
+            ["Vaccines", "Auto reminders"],
+            ["Weight", "Trend charts"],
+            ["AI", "Instant Q&A"],
+            ["Email", "Notifications"],
           ].map(([num, lbl]) => (
-            <div key={lbl} style={{ textAlign: "center" as const }}>
+            <div key={lbl} style={{ textAlign: "center" }}>
               <div
                 style={{
                   fontFamily: "Fraunces, serif",
@@ -319,16 +392,17 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* FEATURES */}
+      {/* FEATURES SECTION (文字已置中優化) */}
       <section
-        style={{ maxWidth: "1100px", margin: "0 auto", padding: "80px 48px" }}
+        className="features-container"
+        style={{ maxWidth: "1100px", margin: "0 auto", padding: "80px 24px" }}
       >
         <div
           style={{
             fontSize: "12px",
             fontWeight: 600,
             letterSpacing: "0.1em",
-            textTransform: "uppercase" as const,
+            textTransform: "uppercase",
             color: "#0E7C86",
             marginBottom: "12px",
           }}
@@ -344,9 +418,10 @@ export default function HomePage() {
             marginBottom: "16px",
           }}
         >
-          Everything you need, in one place
+          Everything you need
         </h2>
         <p
+          className="features-header-desc"
           style={{
             fontSize: "17px",
             color: "#4a6968",
@@ -358,30 +433,19 @@ export default function HomePage() {
         >
           All the tools you need to stay on top of your pet's health
         </p>
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(3, 1fr)",
-            gap: "1px",
-            background: "#e4eaeb",
-            border: "1px solid #e4eaeb",
-            borderRadius: "16px",
-            overflow: "hidden",
-          }}
-        >
+
+        <div className="features-grid">
           {[
-            ["疫苗記錄", "打過哪些疫苗、什麼時候該補打，全部記在這裡~"],
-            ["體重追蹤", "定期記錄體重，看看趨勢有沒有朝對的方向走!"],
-            ["就醫紀錄", "每次看診發生了什麼，趕快寫下來，不然會忘記！"],
-            ["健康清單", "毛小孩該做的事項列表，一項一項打勾確認"],
-            [
-              "問 AI助理",
-              "不確定某件事正不正常？直接用你的語言問，AI 會看你寵物的實際資料再回答～",
-            ],
-            ["Email 提醒", "疫苗到期或就醫預約當天，自動寄 Email 通知你。"],
+            ["疫苗記錄", "打過哪些疫苗、什麼時候該補打。"],
+            ["體重追蹤", "定期記錄體重，看看趨勢。"],
+            ["就醫紀錄", "每次看診發生了什麼，趕快寫下來。"],
+            ["健康清單", "毛小孩該做的事項列表。"],
+            ["問 AI助理", "AI 會看你寵物的資料再回答。"],
+            ["Email 提醒", "自動寄 Email 通知你。"],
           ].map(([title, desc]) => (
             <div
-              key={title as string}
+              key={title}
+              className="feature-item"
               style={{ background: "white", padding: "32px" }}
             >
               <h3
@@ -409,9 +473,10 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* CTA */}
-      <section style={{ padding: "0 48px 80px" }}>
+      {/* CTA SECTION */}
+      <section style={{ padding: "0 24px 80px" }}>
         <div
+          className="cta-box"
           style={{
             maxWidth: "1100px",
             margin: "0 auto",
@@ -422,10 +487,11 @@ export default function HomePage() {
             alignItems: "center",
             justifyContent: "space-between",
             gap: "48px",
-            flexWrap: "wrap" as const,
+            flexWrap: "wrap",
           }}
         >
           <h2
+            className="cta-title"
             style={{
               fontFamily: "Fraunces, serif",
               fontSize: "44px",
@@ -451,27 +517,12 @@ export default function HomePage() {
               fontSize: "15px",
               fontWeight: 600,
               textDecoration: "none",
-              whiteSpace: "nowrap" as const,
             }}
           >
-            Create your account →
+            Create account →
           </Link>
         </div>
       </section>
-
-      {/* FOOTER */}
-      <footer
-        style={{
-          padding: "24px 48px",
-          borderTop: "1px solid #e4eaeb",
-          display: "flex",
-          justifyContent: "center",
-          flexWrap: "wrap" as const,
-          gap: "8px",
-        }}
-      >
-        <p style={{ fontSize: "13px", color: "#4a6968" }}>© 2026 PetHealth</p>
-      </footer>
     </div>
   );
 }

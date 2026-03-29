@@ -70,9 +70,155 @@ type ChecklistItem = {
 
 const css = `
   @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=Fraunces:ital,wght@0,300;0,600;1,600&display=swap');
+  
+  * { box-sizing: border-box; }
+
+  /* 主 Grid*/
+  .main-grid {
+    display: grid;
+    grid-template-columns: 1fr 300px;
+    gap: 20px;
+  }
+
+  /*Pet Header */
+  .pet-header {
+    background: white;
+    border-radius: 16px;
+    border: 1px solid #e4eaeb;
+    padding: 24px 28px;
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+  }
+
+  .pet-avatar {
+    width: 120px;
+    height: 120px;
+    border-radius: 16px;
+    background: #f0fafa;
+    border: 1px solid #e0f5f4;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 40px;
+    flex-shrink: 0;
+    overflow: hidden;
+  }
+
+  .header-btns {
+    display: flex;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+
+  /*Tabs*/
+  .tabs-row {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+  }
+
   .tab-btn:hover { background: white; color: #2d4a49; }
   .btn-outline:hover { border-color: #2ec4ba; color: #0E7C86; }
   .cl-item:hover { background: #f0fafa; }
+
+  /* Checklist 雙欄 */
+  .checklist-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+  }
+
+  .annual-col {
+    padding-left: 20px;
+    border-left: 1px solid #e4eaeb;
+  }
+
+  /* ===== Chat input ===== */
+  .chat-input-group {
+    display: flex;
+    gap: 8px;
+    width: 100%;
+  }
+
+  /* ===== PDF report info grid ===== */
+  .info-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0;
+    font-size: 13px;
+    color: #2d4a49;
+  }
+  .info-grid-item {
+    width: 50%;
+    padding: 6px 0;
+    display: flex;
+    gap: 8px;
+  }
+
+  /* RWD: Tablet */
+  @media (max-width: 950px) {
+    .main-grid {
+      display: flex;
+      flex-direction: column;
+    }
+    .main-col {
+      order: 2;
+    }
+    .sidebar-col {
+      order: 1;
+    }
+  }
+
+  /* RWD Mobile */
+  @media (max-width: 600px) {
+    .pet-header {
+      flex-direction: column;
+      text-align: center;
+      padding: 20px 16px;
+    }
+    .pet-avatar {
+      width: 90px;
+      height: 90px;
+    }
+    .pet-header > div:nth-child(2) {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .header-btns {
+      justify-content: center;
+      width: 100%;
+    }
+    .checklist-grid {
+      grid-template-columns: 1fr;
+    }
+    .annual-col {
+      border-left: none;
+      border-top: 1px solid #eee;
+      padding-left: 0;
+      padding-top: 20px;
+      margin-top: 12px;
+    }
+    .chat-input-group {
+      flex-direction: column;
+    }
+    .chat-input-group button {
+      width: 100%;
+    }
+    .info-grid-item {
+      width: 100%;
+    }
+    .breadcrumb {
+      padding: 0 16px !important;
+    }
+    .main-wrapper {
+      padding: 16px 12px !important;
+    }
+  }
+
   @media print {
     .no-print { display: none !important; }
     body { background: white; }
@@ -99,7 +245,6 @@ export default function PetDetailPage({
     null,
   );
   const [chatQuestion, setChatQuestion] = useState("");
-  const [chatAnswer, setChatAnswer] = useState("");
   const [chatHistory, setChatHistory] = useState<
     { question: string; answer: string; open: boolean }[]
   >([]);
@@ -152,7 +297,6 @@ export default function PetDetailPage({
   }
 
   async function handleToggle(itemId: string, is_completed: boolean) {
-    // 先立刻更新畫面
     setCheckList((prev) =>
       prev.map((item) =>
         item.id === itemId
@@ -165,7 +309,6 @@ export default function PetDetailPage({
       ),
     );
 
-    // 背景打 API
     const res = await fetch(`/api/pets/${id}/checklist/${itemId}`, {
       method: "PATCH",
       credentials: "include",
@@ -173,7 +316,6 @@ export default function PetDetailPage({
       body: JSON.stringify({ is_completed }),
     });
 
-    // 如果失敗就還原
     if (!res.ok) {
       setCheckList((prev) =>
         prev.map((item) =>
@@ -260,7 +402,6 @@ export default function PetDetailPage({
       today.getDate() >= birthday.getDate());
   if (!hasBirthdayPassed) age -= 1;
 
-  // Health Risk 計算
   const oneTimeDone = checklist.filter(
     (i) => i.type === "one_time" && i.is_completed,
   ).length;
@@ -284,12 +425,6 @@ export default function PetDetailPage({
       : riskLevel === "Medium"
         ? "#d4730a"
         : "#c0392b";
-  const riskBg =
-    riskLevel === "Low"
-      ? "#e6f9f0"
-      : riskLevel === "Medium"
-        ? "#fff4e6"
-        : "#fdeaea";
   const circumference = 2 * Math.PI * 40;
   const dashOffset = circumference - (completionRate / 100) * circumference;
 
@@ -313,7 +448,7 @@ export default function PetDetailPage({
 
       {/* BREADCRUMB */}
       <div
-        className="no-print"
+        className="no-print breadcrumb"
         style={{
           background: "white",
           borderBottom: "1px solid #e4eaeb",
@@ -334,36 +469,12 @@ export default function PetDetailPage({
       </div>
 
       <div
+        className="main-wrapper"
         style={{ maxWidth: "1100px", margin: "0 auto", padding: "28px 24px" }}
       >
         {/* PET HEADER */}
-        <div
-          style={{
-            background: "white",
-            borderRadius: "16px",
-            border: "1px solid #e4eaeb",
-            padding: "24px 28px",
-            marginBottom: "24px",
-            display: "flex",
-            alignItems: "center",
-            gap: "20px",
-          }}
-        >
-          <div
-            style={{
-              width: "120px",
-              height: "120px",
-              borderRadius: "16px",
-              background: "#f0fafa",
-              border: "1px solid #e0f5f4",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontSize: "40px",
-              flexShrink: 0,
-              overflow: "hidden",
-            }}
-          >
+        <div className="pet-header">
+          <div className="pet-avatar">
             {pet.photo_url ? (
               <img
                 src={pet.photo_url}
@@ -376,7 +487,7 @@ export default function PetDetailPage({
               "🐶"
             )}
           </div>
-          <div style={{ flex: 1 }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
             <div
               style={{
                 display: "inline-flex",
@@ -412,6 +523,7 @@ export default function PetDetailPage({
                 fontWeight: 600,
                 color: "#0f2423",
                 lineHeight: 1,
+                wordBreak: "break-word",
               }}
             >
               {pet.name}
@@ -424,7 +536,7 @@ export default function PetDetailPage({
               {pet.target_weight ? `· Target: ${pet.target_weight} kg` : ""}
             </div>
           </div>
-          <div className="no-print" style={{ display: "flex", gap: "8px" }}>
+          <div className="no-print header-btns">
             <Link
               href={`/pets/${id}/edit`}
               className="btn-outline"
@@ -461,10 +573,7 @@ export default function PetDetailPage({
         </div>
 
         {/* TABS */}
-        <div
-          className="no-print"
-          style={{ display: "flex", gap: "4px", marginBottom: "24px" }}
-        >
+        <div className="no-print tabs-row">
           {[
             ["Overview", `#`],
             ["Vaccines", `/pets/${id}/vaccines`],
@@ -496,14 +605,9 @@ export default function PetDetailPage({
         </div>
 
         {/* MAIN GRID */}
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "1fr 300px",
-            gap: "20px",
-          }}
-        >
-          <div>
+        <div className="main-grid">
+          {/* ── 主內容欄 ── */}
+          <div className="main-col" style={{ minWidth: 0 }}>
             {/* AI SUMMARY */}
             <div
               style={{
@@ -554,7 +658,7 @@ export default function PetDetailPage({
                     marginBottom: "18px",
                   }}
                 >
-                  Analysing {pet.name}'s health data...
+                  Analysing {pet.name}&apos;s health data...
                 </div>
               ) : summary ? (
                 <div
@@ -628,6 +732,7 @@ export default function PetDetailPage({
                     fontSize: "13px",
                     color: "rgba(255,255,255,0.7)",
                     lineHeight: 1.75,
+                    wordBreak: "break-word",
                   }}
                 >
                   {fullReport}
@@ -776,13 +881,7 @@ export default function PetDetailPage({
                 >
                   Health Checklist
                 </div>
-                <div
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "1fr 1fr",
-                    gap: "0",
-                  }}
-                >
+                <div className="checklist-grid">
                   {/* One-time */}
                   <div style={{ paddingRight: "20px" }}>
                     <div
@@ -876,13 +975,9 @@ export default function PetDetailPage({
                         </div>
                       ))}
                   </div>
+
                   {/* Annual */}
-                  <div
-                    style={{
-                      paddingLeft: "20px",
-                      borderLeft: "1px solid #e4eaeb",
-                    }}
-                  >
+                  <div className="annual-col">
                     <div
                       style={{
                         display: "flex",
@@ -1004,6 +1099,8 @@ export default function PetDetailPage({
                     justifyContent: "space-between",
                     alignItems: "center",
                     marginBottom: "18px",
+                    flexWrap: "wrap" as const,
+                    gap: "8px",
                   }}
                 >
                   <div
@@ -1081,6 +1178,8 @@ export default function PetDetailPage({
                   marginBottom: "20px",
                   paddingBottom: "16px",
                   borderBottom: "1px solid #e4eaeb",
+                  flexWrap: "wrap" as const,
+                  gap: "12px",
                 }}
               >
                 <div>
@@ -1092,7 +1191,7 @@ export default function PetDetailPage({
                       color: "#0f2423",
                     }}
                   >
-                    {pet.name}'s Health Report
+                    {pet.name}&apos;s Health Report
                   </div>
                   <div
                     style={{
@@ -1140,15 +1239,7 @@ export default function PetDetailPage({
                 >
                   Basic Information
                 </div>
-                <div
-                  style={{
-                    display: "flex",
-                    flexWrap: "wrap" as const,
-                    gap: "0",
-                    fontSize: "13px",
-                    color: "#2d4a49",
-                  }}
-                >
+                <div className="info-grid">
                   {[
                     ["Name", pet.name],
                     ["Species", pet.species],
@@ -1161,15 +1252,7 @@ export default function PetDetailPage({
                       ? [["Target Weight", `${pet.target_weight} kg`]]
                       : []),
                   ].map(([label, value]) => (
-                    <div
-                      key={label}
-                      style={{
-                        width: "50%",
-                        padding: "6px 0",
-                        display: "flex",
-                        gap: "8px",
-                      }}
-                    >
+                    <div key={label} className="info-grid-item">
                       <span style={{ color: "#4a6968", minWidth: "100px" }}>
                         {label}:
                       </span>
@@ -1207,6 +1290,8 @@ export default function PetDetailPage({
                         color: "#2d4a49",
                         display: "flex",
                         justifyContent: "space-between",
+                        flexWrap: "wrap" as const,
+                        gap: "4px",
                       }}
                     >
                       <div>
@@ -1220,7 +1305,7 @@ export default function PetDetailPage({
                       </div>
                       <div
                         style={{
-                          fontSize: "15px",
+                          fontSize: "13px",
                           fontWeight: 600,
                           color: "#0f2423",
                         }}
@@ -1265,6 +1350,8 @@ export default function PetDetailPage({
                           display: "flex",
                           justifyContent: "space-between",
                           marginBottom: "4px",
+                          flexWrap: "wrap" as const,
+                          gap: "4px",
                         }}
                       >
                         <strong>{m.brief_name}</strong>
@@ -1293,8 +1380,8 @@ export default function PetDetailPage({
             </div>
           </div>
 
-          {/* SIDEBAR */}
-          <div className="no-print">
+          {/* SIDEBAR*/}
+          <div className="sidebar-col no-print">
             {/* NEXT APPOINTMENT */}
             {nextVaccine && (
               <div
@@ -1329,7 +1416,10 @@ export default function PetDetailPage({
                 >
                   {new Date(nextVaccine.next_due_date!).toLocaleDateString(
                     "en",
-                    { month: "short", day: "numeric" },
+                    {
+                      month: "short",
+                      day: "numeric",
+                    },
                   )}
                 </div>
                 <div
@@ -1348,6 +1438,7 @@ export default function PetDetailPage({
                       borderRadius: "10px",
                       padding: "10px 12px",
                       fontSize: "13px",
+                      wordBreak: "break-word",
                     }}
                   >
                     📍 {nextVaccine.clinic}
@@ -1395,11 +1486,8 @@ export default function PetDetailPage({
               </div>
 
               <div
-                style={{
-                  display: "flex",
-                  gap: "8px",
-                  marginBottom: chatHistory.length > 0 ? "12px" : "0",
-                }}
+                className="chat-input-group"
+                style={{ marginBottom: chatHistory.length > 0 ? "12px" : "0" }}
               >
                 <input
                   type="text"
@@ -1418,6 +1506,8 @@ export default function PetDetailPage({
                     color: "#0f2423",
                     outline: "none",
                     boxSizing: "border-box" as const,
+                    width: "100%",
+                    minWidth: 0,
                   }}
                 />
                 <button
@@ -1472,6 +1562,7 @@ export default function PetDetailPage({
                           justifyContent: "space-between",
                           alignItems: "center",
                           background: item.open ? "#f0fafa" : "white",
+                          gap: "8px",
                         }}
                       >
                         <span
@@ -1479,11 +1570,19 @@ export default function PetDetailPage({
                             fontSize: "13px",
                             fontWeight: 500,
                             color: "#0f2423",
+                            wordBreak: "break-word",
+                            minWidth: 0,
                           }}
                         >
                           {item.question}
                         </span>
-                        <span style={{ fontSize: "11px", color: "#4a6968" }}>
+                        <span
+                          style={{
+                            fontSize: "11px",
+                            color: "#4a6968",
+                            flexShrink: 0,
+                          }}
+                        >
                           {item.open ? "▲" : "▼"}
                         </span>
                       </div>
@@ -1496,6 +1595,7 @@ export default function PetDetailPage({
                             color: "#2d4a49",
                             lineHeight: 1.65,
                             borderTop: "1px solid #e0f5f4",
+                            wordBreak: "break-word",
                           }}
                         >
                           {item.answer}
