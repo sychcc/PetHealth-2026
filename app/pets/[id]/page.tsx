@@ -226,7 +226,7 @@ export default function PetDetailPage({
     const answer = data.answer.replace(/#{1,3}\s/g, "").replace(/\*\*/g, "");
     setChatHistory((prev) => {
       const updated = [
-        { question: chatQuestion, answer, open: true },
+        { question: chatQuestion, answer, open: false },
         ...prev,
       ].slice(0, 10);
       localStorage.setItem(`chatHistory_${id}`, JSON.stringify(updated));
