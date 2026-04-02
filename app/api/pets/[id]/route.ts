@@ -3,10 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { prisma } from "@/lib/prisma";
 
-export async function GET(
-  req: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
-) {
+export async function GET({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const session = await getServerSession(authOptions);
   if (!session?.user?.email) {
@@ -25,7 +22,11 @@ export async function GET(
     where: { email: session.user.email },
   });
 
-  if (pet.user_id !== user!.id) {
+  if (!user) {
+    return NextResponse.json({ error: "使用者不存在" }, { status: 401 });
+  }
+
+  if (pet.user_id !== user.id) {
     return NextResponse.json({ error: "無權限" }, { status: 403 });
   }
 
@@ -57,8 +58,11 @@ export async function PUT(
   const user = await prisma.user.findUnique({
     where: { email: session.user.email },
   });
+  if (!user) {
+    return NextResponse.json({ error: "使用者不存在" }, { status: 401 });
+  }
 
-  if (pet.user_id !== user!.id) {
+  if (pet.user_id !== user.id) {
     return NextResponse.json({ error: "無權限" }, { status: 403 });
   }
 
@@ -94,10 +98,7 @@ export async function PUT(
   });
 }
 
-export async function DELETE(
-  req: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
-) {
+export async function DELETE({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const session = await getServerSession(authOptions);
   if (!session?.user?.email) {
@@ -116,15 +117,12 @@ export async function DELETE(
     where: { email: session.user.email },
   });
 
-  if (pet.user_id !== user!.id) {
+  if (!user) {
+    return NextResponse.json({ error: "使用者不存在" }, { status: 401 });
+  }
+  if (pet.user_id !== user.id) {
     return NextResponse.json({ error: "無權限" }, { status: 403 });
   }
-  // await prisma.weightRecord.deleteMany({ where: { pet_id: BigInt(id) } })
-  // await prisma.vaccine.deleteMany({ where: { pet_id: BigInt(id) } })
-  // await prisma.medicalRecord.deleteMany({ where: { pet_id: BigInt(id) } })
-  // await prisma.reminder.deleteMany({ where: { pet_id: BigInt(id) } })
-  // await prisma.aiAnalysis.deleteMany({ where: { pet_id: BigInt(id) } })
-  // await prisma.petChecklistItem.deleteMany({ where: { pet_id: BigInt(id) } })
 
   await prisma.pet.delete({
     where: { id: BigInt(id) },
