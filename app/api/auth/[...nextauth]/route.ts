@@ -1,8 +1,8 @@
-import NextAuth, { NextAuthOptions } from "next-auth"
-import CredentialsProvider from "next-auth/providers/credentials"
-import GoogleProvider from "next-auth/providers/google"
-import { prisma } from "@/lib/prisma"
-import bcrypt from "bcrypt"
+import NextAuth, { NextAuthOptions } from "next-auth";
+import CredentialsProvider from "next-auth/providers/credentials";
+import GoogleProvider from "next-auth/providers/google";
+import { prisma } from "@/lib/prisma";
+import bcrypt from "bcrypt";
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -17,14 +17,26 @@ export const authOptions: NextAuthOptions = {
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) return null
+        //防呆 欄位不能為空
+        if (!credentials?.email || !credentials?.password) return null;
+        //找用戶
         const user = await prisma.user.findUnique({
           where: { email: credentials.email },
-        })
-        if (!user || !user.password) return null
-        const isValid = await bcrypt.compare(credentials.password, user.password)
-        if (!isValid) return null
-        return { id: String(user.id), name: user.name, email: user.email }
+        });
+        if (!user) return null;
+        if (!user.password) {
+          throw new Error("Please use google login");
+        }
+        //有兩個判斷 !user.password是關鍵=> 因為google用戶不用輸入密碼 所以會是null
+        //帳號不存在 ＆ 帳號存在但沒有密碼（Google 用戶）
+
+        //比對密碼
+        const isValid = await bcrypt.compare(
+          credentials.password,
+          user.password,
+        );
+        if (!isValid) return null;
+        return { id: String(user.id), name: user.name, email: user.email };
       },
     }),
   ],
@@ -38,7 +50,7 @@ export const authOptions: NextAuthOptions = {
       if (account?.provider === "google") {
         const existingUser = await prisma.user.findUnique({
           where: { email: user.email! },
-        })
+        });
         if (!existingUser) {
           await prisma.user.create({
             data: {
@@ -46,13 +58,13 @@ export const authOptions: NextAuthOptions = {
               email: user.email!,
               provider: "google",
             },
-          })
+          });
         }
       }
-      return true
+      return true;
     },
   },
-}
+};
 
-const handler = NextAuth(authOptions)
-export { handler as GET, handler as POST }
+const handler = NextAuth(authOptions);
+export { handler as GET, handler as POST };
