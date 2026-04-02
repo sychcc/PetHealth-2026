@@ -1,35 +1,32 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { prisma } from "@/lib/prisma";
+import { validatePetOwner, validateUser } from "@/lib/auth";
 
 export async function GET({ params }: { params: Promise<{ id: string }> }) {
+  //先判斷有沒有登入
+
+  const authResult = await validateUser();
+  if ("error" in authResult) {
+    return NextResponse.json(
+      { error: authResult.error },
+      { status: authResult.status },
+    );
+  }
+  //到這裡就一定有user => 一定有user id
+  //validateUser 是return session
   const { id } = await params;
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.email) {
-    return NextResponse.json({ error: "未登入" }, { status: 401 });
+
+  //第二層判斷：有沒有寵物的權限
+
+  const petResult = await validatePetOwner(id, authResult.email);
+  if ("error" in petResult) {
+    return NextResponse.json(
+      { error: petResult.error },
+      { status: petResult.status },
+    );
   }
-
-  const pet = await prisma.pet.findUnique({
-    where: { id: BigInt(id) },
-  });
-
-  if (!pet) {
-    return NextResponse.json({ error: "寵物不存在" }, { status: 404 });
-  }
-
-  const user = await prisma.user.findUnique({
-    where: { email: session.user.email },
-  });
-
-  if (!user) {
-    return NextResponse.json({ error: "使用者不存在" }, { status: 401 });
-  }
-
-  if (pet.user_id !== user.id) {
-    return NextResponse.json({ error: "無權限" }, { status: 403 });
-  }
-
+  //成功
+  const { pet } = petResult;
   return NextResponse.json({
     ...pet,
     id: String(pet.id),
@@ -41,29 +38,22 @@ export async function PUT(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  const authResult = await validateUser();
+  if ("error" in authResult) {
+    return NextResponse.json(
+      { error: authResult.error },
+      { status: authResult.status },
+    );
+  }
+
   const { id } = await params;
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.email) {
-    return NextResponse.json({ error: "未登入" }, { status: 401 });
-  }
 
-  const pet = await prisma.pet.findUnique({
-    where: { id: BigInt(id) },
-  });
-
-  if (!pet) {
-    return NextResponse.json({ error: "寵物不存在" }, { status: 404 });
-  }
-
-  const user = await prisma.user.findUnique({
-    where: { email: session.user.email },
-  });
-  if (!user) {
-    return NextResponse.json({ error: "使用者不存在" }, { status: 401 });
-  }
-
-  if (pet.user_id !== user.id) {
-    return NextResponse.json({ error: "無權限" }, { status: 403 });
+  const petResult = await validatePetOwner(id, authResult.email);
+  if ("error" in petResult) {
+    return NextResponse.json(
+      { error: petResult.error },
+      { status: petResult.status },
+    );
   }
 
   const {
@@ -99,29 +89,22 @@ export async function PUT(
 }
 
 export async function DELETE({ params }: { params: Promise<{ id: string }> }) {
+  const authResult = await validateUser();
+  if ("error" in authResult) {
+    return NextResponse.json(
+      { error: authResult.error },
+      { status: authResult.status },
+    );
+  }
+
   const { id } = await params;
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.email) {
-    return NextResponse.json({ error: "未登入" }, { status: 401 });
-  }
 
-  const pet = await prisma.pet.findUnique({
-    where: { id: BigInt(id) },
-  });
-
-  if (!pet) {
-    return NextResponse.json({ error: "寵物不存在" }, { status: 404 });
-  }
-
-  const user = await prisma.user.findUnique({
-    where: { email: session.user.email },
-  });
-
-  if (!user) {
-    return NextResponse.json({ error: "使用者不存在" }, { status: 401 });
-  }
-  if (pet.user_id !== user.id) {
-    return NextResponse.json({ error: "無權限" }, { status: 403 });
+  const petResult = await validatePetOwner(id, authResult.email);
+  if ("error" in petResult) {
+    return NextResponse.json(
+      { error: petResult.error },
+      { status: petResult.status },
+    );
   }
 
   await prisma.pet.delete({

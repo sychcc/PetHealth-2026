@@ -1,23 +1,27 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "../auth/[...nextauth]/route";
 import { prisma } from "@/lib/prisma";
+import { validateUser } from "@/lib/auth";
 
 // GET /api/pets - 取得我的寵物列表
 export async function GET() {
-  //先判斷有沒有登入
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.email) {
-    return NextResponse.json({ error: "未登入" }, { status: 401 });
+  const authResult = await validateUser();
+  if ("error" in authResult) {
+    return NextResponse.json(
+      { error: authResult.error },
+      { status: authResult.status },
+    );
   }
 
+  //有登入 拿pets
+  //validateUser() 回傳 email 用email查user再用user_id查pets
   const user = await prisma.user.findUnique({
-    where: { email: session.user.email },
+    where: { email: authResult.email },
   });
-  console.log("session:", session); // 加這行
+  if (!user)
+    return NextResponse.json({ error: "使用者不存在" }, { status: 401 });
 
   const pets = await prisma.pet.findMany({
-    where: { user_id: user!.id },
+    where: { user_id: user.id },
   });
 
   return NextResponse.json(
@@ -31,16 +35,15 @@ export async function GET() {
 
 // POST /api/pets - 新增寵物
 export async function POST(req: NextRequest) {
-  const session = await getServerSession(authOptions);
-  console.log("session:", session); // 加這行
-  if (!session?.user?.email) {
-    return NextResponse.json({ error: "未登入" }, { status: 401 });
+  const authResult = await validateUser();
+  if ("error" in authResult) {
+    return NextResponse.json(
+      { error: authResult.error },
+      { status: authResult.status },
+    );
   }
-
-  const user = await prisma.user.findUnique({
-    where: { email: session.user.email },
-  });
-
+  //有登入
+  //先驗證欄位有沒有正確，正確才去資料庫查user => Fail Fast
   const { name, species, birthdate, chip_number, photo_url } = await req.json();
 
   if (!name || !species || !birthdate) {
@@ -49,10 +52,15 @@ export async function POST(req: NextRequest) {
       { status: 400 },
     );
   }
+  const user = await prisma.user.findUnique({
+    where: { email: authResult.email },
+  });
+  if (!user)
+    return NextResponse.json({ error: "使用者不存在" }, { status: 401 });
 
   const pet = await prisma.pet.create({
     data: {
-      user_id: user!.id,
+      user_id: user.id,
       name,
       species,
       birthdate: new Date(birthdate),
@@ -66,4 +74,3 @@ export async function POST(req: NextRequest) {
     { status: 201 },
   );
 }
-
