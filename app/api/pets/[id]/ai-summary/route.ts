@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { validatePetOwner, validateUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
@@ -13,21 +12,23 @@ export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const { id } = await params;
-  //判斷有沒有登入
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.email) {
-    return NextResponse.json({ error: "未登入" }, { status: 401 });
+  const authResult = await validateUser();
+  if ("error" in authResult) {
+    return NextResponse.json(
+      { error: authResult.error },
+      { status: authResult.status },
+    );
   }
-  // 1. 驗證寵物是否存在還有權限
-  const pet = await prisma.pet.findUnique({ where: { id: BigInt(id) } });
-  if (!pet) return NextResponse.json({ error: "寵物不存在" }, { status: 404 });
+  const { id } = await params;
 
-  const user = await prisma.user.findUnique({
-    where: { email: session.user.email },
-  });
-  if (pet.user_id !== user!.id)
-    return NextResponse.json({ error: "無權限" }, { status: 403 });
+  const petResult = await validatePetOwner(id, authResult.email);
+  if ("error" in petResult) {
+    return NextResponse.json(
+      { error: petResult.error },
+      { status: petResult.status },
+    );
+  }
+  const { pet } = petResult;
 
   //判斷是否要強制重新分析
   const refresh = req.nextUrl.searchParams.get("refresh") === "true";
@@ -72,8 +73,8 @@ export async function GET(
   });
 
   //如果沒有任何健康資料就不呼叫gemini
-  if(weights.length===0&&vaccines.length===0&&medicals.length===0){
-    return NextResponse.json({summary:null,full_report:null})
+  if (weights.length === 0 && vaccines.length === 0 && medicals.length === 0) {
+    return NextResponse.json({ summary: null, full_report: null });
   }
 
   // 整理prompt
@@ -90,7 +91,10 @@ export async function GET(
 ${
   weights.length > 0
     ? weights
-        .map((w) => `-${w.date ? new Date(w.date).toISOString().split("T")[0] : "未知日期"}:${w.weight}kg`)
+        .map(
+          (w) =>
+            `-${w.date ? new Date(w.date).toISOString().split("T")[0] : "未知日期"}:${w.weight}kg`,
+        )
         .join("\n")
     : "無紀錄"
 }

@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { validatePetOwner, validateUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
@@ -120,20 +119,23 @@ export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  const authResult = await validateUser();
+  if ("error" in authResult) {
+    return NextResponse.json(
+      { error: authResult.error },
+      { status: authResult.status },
+    );
+  }
   const { id } = await params;
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.email)
-    return NextResponse.json({ error: "未登入" }, { status: 401 });
 
-  const pet = await prisma.pet.findUnique({ where: { id: BigInt(id) } });
-  if (!pet) return NextResponse.json({ error: "寵物不存在" }, { status: 404 });
-
-  const user = await prisma.user.findUnique({
-    where: { email: session.user.email },
-  });
-  if (pet.user_id !== user!.id)
-    return NextResponse.json({ error: "無權限" }, { status: 403 });
-
+  const petResult = await validatePetOwner(id, authResult.email);
+  if ("error" in petResult) {
+    return NextResponse.json(
+      { error: petResult.error },
+      { status: petResult.status },
+    );
+  }
+  const { pet } = petResult;
   const { question } = await req.json();
   if (!question)
     return NextResponse.json({ error: "請輸入問題" }, { status: 400 });

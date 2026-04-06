@@ -2,7 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { validatePetOwner, validateUser } from "@/lib/auth";
 
-export async function GET({ params }: { params: Promise<{ id: string }> }) {
+export async function GET(
+  _req: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
+) {
   //先判斷有沒有登入
 
   const authResult = await validateUser();
