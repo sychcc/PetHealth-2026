@@ -334,3 +334,16 @@ pethealth/
 │   └── sendReminders.ts        # Cron job script
 └── Dockerfile                  # Multi-stage build
 ```
+
+## Testing
+
+```bash
+npm test
+```
+
+![Test Results](./docs/test_results.png)
+
+Unit tests cover core validation logic using Jest + ts-jest:
+
+- `auth.test.ts` — validateUser, validatePetOwner (401 / 403 / 404 edge cases)
+- `pets.test.ts` — POST /api/pets required field validation
