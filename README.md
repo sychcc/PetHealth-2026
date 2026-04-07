@@ -3,6 +3,7 @@
 A full-stack pet health management system built with Next.js 16, PostgreSQL, and Gemini AI — containerized with Docker and deployed on AWS with a high-availability architecture.
 
 **Live Demo:** [https://pethealth.sychcc.net](https://pethealth.sychcc.net)
+
 ![PetHealth Landing Page](./docs/pethealth_landingpage.png)
 
 ---
