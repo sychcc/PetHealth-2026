@@ -48,11 +48,14 @@ export async function PUT(
   });
 }
 
-export async function DELETE({
-  params,
-}: {
-  params: Promise<{ id: string; weightId: string }>;
-}) {
+export async function DELETE(
+  _req: NextRequest,
+  {
+    params,
+  }: {
+    params: Promise<{ id: string; weightId: string }>;
+  },
+) {
   const authResult = await validateUser();
   if ("error" in authResult) {
     return NextResponse.json(
