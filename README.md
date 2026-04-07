@@ -276,7 +276,7 @@ SENDGRID_FROM_EMAIL=your-email
 # Build for production (AMD64 for EC2)
 docker buildx build \
   --platform linux/amd64 \
-  -t your-dockerhub/pethealth:latest \
+  -t sychcc/pethealth:latest \
   --push \
   .
 
@@ -296,7 +296,7 @@ docker run -d \
   --name pethealth \
   -p 3000:3000 \
   --env-file .env \
-  your-dockerhub/pethealth:latest
+  sychcc/pethealth:latest
 
 # Run database migrations
 npx prisma migrate deploy
