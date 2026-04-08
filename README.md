@@ -125,6 +125,7 @@ Key design decisions:
 ---
 
 ## API Design
+> API Docs：[PetHealth API Docs](https://sychcc.stoplight.io/docs/pethealth/kuvmgl9p9swk6-pet-health-api)
 
 ### Authentication
 
