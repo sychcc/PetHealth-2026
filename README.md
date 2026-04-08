@@ -17,7 +17,7 @@ A full-stack pet health management system built with Next.js 16, PostgreSQL, and
 - **AI Health Analysis** — Auto-generated health summaries powered by Gemini API
 - **AI Health Chat** — Ask questions about your pet using Gemini Function Calling
 - **Pet Checklist** — One-time and annual health task tracking
-- **Email Reminders** — Automated SendGrid notifications via cron job
+- **Email Reminders** — Automated SendGrid notifications via GitHub Actions
 - **Photo Upload** — Pet photos stored on AWS S3
 - **Authentication** — Credentials login + Google OAuth via NextAuth.js
 
@@ -58,6 +58,7 @@ A full-stack pet health management system built with Next.js 16, PostgreSQL, and
 | AWS Application Load Balancer | Traffic distribution across EC2 instances |
 | Docker                        | Containerization (multi-stage build)      |
 | Nginx                         | Reverse proxy                             |
+| GitHub Actions                | Automated email reminder cron job         |
 
 ---
 
@@ -70,6 +71,35 @@ A full-stack pet health management system built with Next.js 16, PostgreSQL, and
 ## Deployment Architecture
 
 ![Deployment Architecture](./docs/deployment_architecture.png)
+
+---
+
+## High Availability Setup
+
+This project runs on two EC2 instances behind an Application Load Balancer for redundancy and zero-downtime deployment.
+
+### Infrastructure Overview
+
+- **EC2 x2** — each runs the same Docker container independently
+- **ALB** — distributes traffic across both instances, health check every 30s
+- **CloudFront** — CDN layer in front of ALB, handles HTTPS termination
+- **RDS** — single PostgreSQL instance shared by both EC2s
+
+### Deploy to both instances
+
+```bash
+# EC2 #1
+ssh ec2-user@<EC2_1_IP>
+docker pull sychcc/pethealth:latest
+docker stop pethealth && docker rm pethealth
+docker run -d --name pethealth -p 3000:3000 --env-file .env sychcc/pethealth:latest
+
+# EC2 #2
+ssh ec2-user@<EC2_2_IP>
+docker pull sychcc/pethealth:latest
+docker stop pethealth && docker rm pethealth
+docker run -d --name pethealth -p 3000:3000 --env-file .env sychcc/pethealth:latest
+```
 
 ---
 
@@ -141,10 +171,9 @@ Key design decisions:
 
 ### Other
 
-| Method | Endpoint              | Description                        |
-| ------ | --------------------- | ---------------------------------- |
-| POST   | `/api/upload`         | Upload photo to AWS S3             |
-| GET    | `/api/cron/reminders` | Trigger email reminders (cron job) |
+| Method | Endpoint      | Description            |
+| ------ | ------------- | ---------------------- |
+| POST   | `/api/upload` | Upload photo to AWS S3 |
 
 **All routes require:** NextAuth session validation + resource ownership check (401/403)
 
@@ -159,6 +188,8 @@ GET `/api/pets/:id/ai-summary`
 - Returns cached result from `ai_analyses` table (type: `"auto"`) if available
 - Add `?refresh=true` to force re-analysis
 - If no health data exists, returns `null` without calling Gemini
+
+### AI Chat — Gemini Function Calling
 
 The AI chat feature uses **Gemini Function Calling**, allowing the model to autonomously query the database for real pet data before answering.
 
@@ -190,6 +221,21 @@ Response returned to user
 
 ---
 
+## Authentication Flow
+
+```
+Credentials Login:
+  email + password → bcrypt.compare() → JWT → Cookie
+
+Google OAuth:
+  Google callback → signIn() → auto-create user if new → JWT → Cookie
+
+Every API request:
+  Cookie → getServerSession() → validate ownership → execute logic
+```
+
+---
+
 ## React Component Structure
 
 ```
@@ -215,18 +261,29 @@ State management approach:
 
 ---
 
-## Authentication Flow
+## Email Reminders
 
+Automated via GitHub Actions — runs daily at 9:00 AM (Taiwan time).
+
+- Sends reminder 3 days before vaccine expiry
+- Sends reminder 1 day before vaccine expiry
+- Powered by SendGrid
+- Workflow: `.github/workflows/send-reminders.yml`
+
+---
+
+## Testing
+
+```bash
+npm test
 ```
-Credentials Login:
-  email + password → bcrypt.compare() → JWT → Cookie
 
-Google OAuth:
-  Google callback → signIn() → auto-create user if new → JWT → Cookie
+![Test Results](./docs/test_results.png)
 
-Every API request:
-  Cookie → getServerSession() → validate ownership → execute logic
-```
+Unit tests cover core validation logic using Jest + ts-jest:
+
+- `auth.test.ts` — validateUser, validatePetOwner (401 / 403 / 404 edge cases)
+- `pets.test.ts` — POST /api/pets required field validation
 
 ---
 
@@ -274,8 +331,6 @@ AWS_S3_BUCKET=your-bucket
 GEMINI_API_KEY=your-gemini-key
 SENDGRID_API_KEY=your-sendgrid-key
 SENDGRID_FROM_EMAIL=your-email
-# ---- Production only ----
-CRON_SECRET=your-cron-secret
 ```
 
 ---
@@ -314,41 +369,15 @@ npx prisma migrate deploy
 
 ---
 
-## High Availability Setup
-
-This project runs on two EC2 instances behind an Application Load Balancer for redundancy and zero-downtime deployment.
-
-### Infrastructure Overview
-
-- **EC2 x2** — each runs the same Docker container independently
-- **ALB** — distributes traffic across both instances, health check every 30s
-- **CloudFront** — CDN layer in front of ALB, handles HTTPS termination
-- **RDS** — single PostgreSQL instance shared by both EC2s
-
-### Deploy to both instances
-
-```bash
-# EC2 #1
-ssh ec2-user@
-docker pull sychcc/pethealth:latest
-docker stop pethealth && docker rm pethealth
-docker run -d --name pethealth -p 3000:3000 --env-file .env sychcc/pethealth:latest
-
-# EC2 #2
-ssh ec2-user@
-docker pull sychcc/pethealth:latest
-docker stop pethealth && docker rm pethealth
-docker run -d --name pethealth -p 3000:3000 --env-file .env sychcc/pethealth:latest
-```
-
----
-
 ## Project Structure
 
 ```
 pethealth/
+├── .github/
+│   └── workflows/
+│       └── send-reminders.yml  # Email reminder cron job
 ├── app/
-│   ├── api/                    # API Routes (Controllers)
+│   ├── api/                    # API Routes
 │   │   ├── auth/               # Authentication endpoints
 │   │   ├── pets/               # Pet CRUD + nested resources
 │   │   │   └── [id]/
@@ -358,8 +387,7 @@ pethealth/
 │   │   │       ├── checklist/
 │   │   │       ├── ai-chat/
 │   │   │       └── ai-summary/
-│   │   ├── upload/             # S3 photo upload
-│   │   └── cron/               # Email reminder cron
+│   │   └── upload/             # S3 photo upload
 │   ├── pets/                   # Frontend pages
 │   ├── auth/                   # Login / signup pages
 │   └── components/             # Shared components
@@ -370,19 +398,9 @@ pethealth/
 │   ├── schema.prisma
 │   └── migrations/
 ├── scripts/
-│   └── sendReminders.ts        # Cron job script
+│   └── sendReminders.ts        # Email reminder script
+├── __tests__/
+│   ├── auth.test.ts
+│   └── pets.test.ts
 └── Dockerfile                  # Multi-stage build
 ```
-
-## Testing
-
-```bash
-npm test
-```
-
-![Test Results](./docs/test_results.png)
-
-Unit tests cover core validation logic using Jest + ts-jest:
-
-- `auth.test.ts` — validateUser, validatePetOwner (401 / 403 / 404 edge cases)
-- `pets.test.ts` — POST /api/pets required field validation
