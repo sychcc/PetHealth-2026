@@ -152,6 +152,14 @@ Key design decisions:
 
 ## AI Agent — Technical Highlight
 
+### AI Summary — Auto Health Analysis
+
+GET `/api/pets/:id/ai-summary`
+
+- Returns cached result from `ai_analyses` table (type: `"auto"`) if available
+- Add `?refresh=true` to force re-analysis
+- If no health data exists, returns `null` without calling Gemini
+
 The AI chat feature uses **Gemini Function Calling**, allowing the model to autonomously query the database for real pet data before answering.
 
 ```
@@ -266,6 +274,8 @@ AWS_S3_BUCKET=your-bucket
 GEMINI_API_KEY=your-gemini-key
 SENDGRID_API_KEY=your-sendgrid-key
 SENDGRID_FROM_EMAIL=your-email
+# ---- Production only ----
+CRON_SECRET=your-cron-secret
 ```
 
 ---
@@ -290,7 +300,7 @@ docker run -p 3000:3000 --env-file .env sychcc/pethealth:latest
 
 ```bash
 # On each EC2 instance
-docker pull your-dockerhub/pethealth:latest
+docker pull sychcc/pethealth:latest
 docker stop pethealth && docker rm pethealth
 docker run -d \
   --name pethealth \
@@ -300,6 +310,35 @@ docker run -d \
 
 # Run database migrations
 npx prisma migrate deploy
+```
+
+---
+
+## High Availability Setup
+
+This project runs on two EC2 instances behind an Application Load Balancer for redundancy and zero-downtime deployment.
+
+### Infrastructure Overview
+
+- **EC2 x2** — each runs the same Docker container independently
+- **ALB** — distributes traffic across both instances, health check every 30s
+- **CloudFront** — CDN layer in front of ALB, handles HTTPS termination
+- **RDS** — single PostgreSQL instance shared by both EC2s
+
+### Deploy to both instances
+
+```bash
+# EC2 #1
+ssh ec2-user@
+docker pull sychcc/pethealth:latest
+docker stop pethealth && docker rm pethealth
+docker run -d --name pethealth -p 3000:3000 --env-file .env sychcc/pethealth:latest
+
+# EC2 #2
+ssh ec2-user@
+docker pull sychcc/pethealth:latest
+docker stop pethealth && docker rm pethealth
+docker run -d --name pethealth -p 3000:3000 --env-file .env sychcc/pethealth:latest
 ```
 
 ---
