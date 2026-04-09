@@ -1,0 +1,528 @@
+openapi: 3.0.0
+info:
+  title: PetHealth API
+  version: 1.0.0
+  description: Pet health management system API
+
+servers:
+  - url: https://pethealth.sychcc.net/api
+
+paths:
+  /auth/signup:
+    post:
+      summary: Register with email + password
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, email, password]
+              properties:
+                name:
+                  type: string
+                email:
+                  type: string
+                password:
+                  type: string
+      responses:
+        '201':
+          description: 註冊成功
+        '400':
+          description: Email 已存在 / 密碼格式錯誤
+
+  /auth/signin:
+    post:
+      summary: NextAuth login (credentials + Google OAuth)
+      tags: [Auth]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                password:
+                  type: string
+      responses:
+        '200':
+          description: 登入成功，回傳 JWT Cookie
+        '401':
+          description: 帳號或密碼錯誤
+
+  /pets:
+    get:
+      summary: Get all pets for current user
+      tags: [Pets]
+      responses:
+        '200':
+          description: 寵物列表
+        '401':
+          description: 未登入
+    post:
+      summary: Create a new pet
+      tags: [Pets]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, species, birthdate]
+              properties:
+                name:
+                  type: string
+                species:
+                  type: string
+                breed:
+                  type: string
+                gender:
+                  type: string
+                birthdate:
+                  type: string
+                  format: date
+                chip_number:
+                  type: string
+                photo_url:
+                  type: string
+      responses:
+        '201':
+          description: 新增成功
+        '400':
+          description: 必填欄位缺漏
+        '401':
+          description: 未登入
+
+  /pets/{id}:
+    get:
+      summary: Get single pet
+      tags: [Pets]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 寵物資料
+        '403':
+          description: 無權限
+        '404':
+          description: 寵物不存在
+    put:
+      summary: Update pet
+      tags: [Pets]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                species:
+                  type: string
+                breed:
+                  type: string
+                gender:
+                  type: string
+                birthdate:
+                  type: string
+                  format: date
+                target_weight:
+                  type: number
+      responses:
+        '200':
+          description: 更新成功
+        '403':
+          description: 無權限
+    delete:
+      summary: Delete pet (cascades all records)
+      tags: [Pets]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 刪除成功
+        '403':
+          description: 無權限
+
+  /pets/{id}/vaccines:
+    get:
+      summary: List vaccine records
+      tags: [Health Records]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 疫苗記錄列表
+    post:
+      summary: Create vaccine record
+      tags: [Health Records]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [vaccine_name, date]
+              properties:
+                vaccine_name:
+                  type: string
+                date:
+                  type: string
+                  format: date
+                next_due_date:
+                  type: string
+                  format: date
+                clinic:
+                  type: string
+                vet_name:
+                  type: string
+                cost:
+                  type: integer
+      responses:
+        '201':
+          description: 新增成功
+        '400':
+          description: 必填欄位缺漏
+
+  /pets/{id}/vaccines/{vaccineId}:
+    put:
+      summary: Update vaccine record
+      tags: [Health Records]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: vaccineId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 更新成功
+    delete:
+      summary: Delete vaccine record
+      tags: [Health Records]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: vaccineId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 刪除成功
+
+  /pets/{id}/weight:
+    get:
+      summary: List weight records
+      tags: [Health Records]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 體重記錄列表
+    post:
+      summary: Create weight record
+      tags: [Health Records]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [date, weight]
+              properties:
+                date:
+                  type: string
+                  format: date
+                weight:
+                  type: number
+                notes:
+                  type: string
+      responses:
+        '201':
+          description: 新增成功
+
+  /pets/{id}/weight/{weightId}:
+    delete:
+      summary: Delete weight record
+      tags: [Health Records]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: weightId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 刪除成功
+
+  /pets/{id}/medical:
+    get:
+      summary: List medical records
+      tags: [Health Records]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 就醫記錄列表
+    post:
+      summary: Create medical record
+      tags: [Health Records]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [brief_name, date]
+              properties:
+                brief_name:
+                  type: string
+                date:
+                  type: string
+                  format: date
+                clinic:
+                  type: string
+                symptoms:
+                  type: string
+                diagnosis:
+                  type: string
+                prescription:
+                  type: string
+                cost:
+                  type: integer
+      responses:
+        '201':
+          description: 新增成功
+
+  /pets/{id}/medical/{medicalId}:
+    put:
+      summary: Update medical record
+      tags: [Health Records]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: medicalId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 更新成功
+    delete:
+      summary: Delete medical record
+      tags: [Health Records]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: medicalId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 刪除成功
+
+  /pets/{id}/checklist:
+    get:
+      summary: Get checklist items
+      tags: [Checklist]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 清單項目
+    post:
+      summary: Initialize checklist (dog/cat template)
+      tags: [Checklist]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '201':
+          description: 建立成功
+        '200':
+          description: 已存在
+
+  /pets/{id}/checklist/{itemId}:
+    put:
+      summary: Mark item complete/incomplete
+      tags: [Checklist]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: itemId
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                is_completed:
+                  type: boolean
+      responses:
+        '200':
+          description: 更新成功
+
+  /pets/{id}/ai-summary:
+    get:
+      summary: Auto health analysis (cached + refresh)
+      tags: [AI]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: refresh
+          schema:
+            type: boolean
+          description: 強制重新分析
+      responses:
+        '200':
+          description: AI 健康摘要
+
+  /pets/{id}/ai-chat:
+    post:
+      summary: AI health chat with Gemini Function Calling
+      tags: [AI]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [question]
+              properties:
+                question:
+                  type: string
+      responses:
+        '200':
+          description: AI 回答
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  answer:
+                    type: string
+
+  /upload:
+    post:
+      summary: Upload photo to AWS S3
+      tags: [Other]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: JPG / PNG only, max 5MB
+      responses:
+        '200':
+          description: 上傳成功，回傳 S3 URL
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  url:
+                    type: string
+        '400':
+          description: 沒有檔案 / 檔案超過 5MB / 不支援的格式
+        '401':
+          description: 未登入
