@@ -58,6 +58,7 @@ export async function POST(
     prescription,
     cost,
     photo_url,
+    next_appointment,
   } = await req.json();
 
   if (!date || !brief_name) {
@@ -77,6 +78,7 @@ export async function POST(
     data: {
       pet_id: BigInt(id),
       date: new Date(date),
+      next_appointment: new Date(next_appointment) || null,
       brief_name: brief_name,
       clinic: clinic || null,
       symptoms: symptoms || null,

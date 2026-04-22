@@ -81,6 +81,7 @@ model MedicalRecord {
   pet_id       BigInt
   brief_name   String
   date         DateTime
+  next_appointment DateTime?
   clinic       String?
   symptoms     String?
   diagnosis    String?
