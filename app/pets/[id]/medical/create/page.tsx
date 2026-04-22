@@ -37,6 +37,7 @@ export default function CreateMedicalPage({
   const [petName, setPetName] = useState("");
   const [briefName, setBriefName] = useState("");
   const [date, setDate] = useState("");
+  const [next_appointment, setNextAppointment] = useState("");
   const [clinic, setClinic] = useState("");
   const [symptoms, setSymptoms] = useState("");
   const [diagnosis, setDiagnosis] = useState("");
@@ -78,6 +79,7 @@ export default function CreateMedicalPage({
       body: JSON.stringify({
         brief_name: briefName,
         date,
+        next_appointment,
         clinic,
         symptoms,
         diagnosis,
@@ -187,6 +189,16 @@ export default function CreateMedicalPage({
                   max={new Date().toISOString().split("T")[0]}
                   value={date}
                   onChange={(e) => setDate(e.target.value)}
+                  style={inputStyle}
+                />
+              </div>
+              {/* 新增 next_appointment */}
+              <div>
+                <label style={labelStyle}>Next Appointment</label>
+                <input
+                  type="date"
+                  value={next_appointment}
+                  onChange={(e) => setNextAppointment(e.target.value)}
                   style={inputStyle}
                 />
               </div>
