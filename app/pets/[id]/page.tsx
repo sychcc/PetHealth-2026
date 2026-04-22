@@ -1134,8 +1134,7 @@ export default function PetDetailPage({
                     Weight Trend
                   </div>
                   <span style={{ fontSize: "13px", color: "#4a6968" }}>
-                    Current: {weightRecords[weightRecords.length - 1]?.weight}{" "}
-                    kg
+                    Current: {weightRecords[0]?.weight} kg
                   </span>
                 </div>
                 <div style={{ height: "200px" }}>
