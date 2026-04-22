@@ -1,3 +1,5 @@
+[English](./README.md) | [中文](./README.zh-TW.md)
+
 # PetHealth
 
 A full-stack pet health management system built with Next.js 16, PostgreSQL, and Gemini AI — containerized with Docker and deployed on AWS with a high-availability architecture.
