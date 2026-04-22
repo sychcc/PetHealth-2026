@@ -54,6 +54,7 @@ type MedicalRecord = {
   id: string;
   brief_name: string;
   date: string;
+  next_appointment: string | null;
   clinic: string | null;
   diagnosis: string | null;
   prescription: string | null;
@@ -66,6 +67,12 @@ type ChecklistItem = {
   type: string;
   is_completed: boolean;
   completed_at: string | null;
+};
+
+type AppointmentItem = {
+  name: string;
+  clinic: string | null;
+  effectiveDate: Date;
 };
 
 const css = `
@@ -428,14 +435,26 @@ export default function PetDetailPage({
   const circumference = 2 * Math.PI * 40;
   const dashOffset = circumference - (completionRate / 100) * circumference;
 
-  const nextVaccine = vaccineRecords
-    .map((v) => ({
-      ...v,
+  //side bar 下次預約的顯示邏輯
+
+  const allAppointments: AppointmentItem[] = [
+    ...vaccineRecords.map((v) => ({
+      name: v.vaccine_name,
+      clinic: v.clinic,
       effectiveDate: v.next_due_date
         ? new Date(v.next_due_date)
         : new Date(v.date),
-    }))
-    .filter((v) => v.effectiveDate > new Date())
+    })),
+    ...medicalRecords.map((m) => ({
+      name: m.brief_name,
+      clinic: m.clinic,
+      effectiveDate: m.next_appointment
+        ? new Date(m.next_appointment)
+        : new Date(m.date),
+    })),
+  ];
+  const next_appointment = allAppointments
+    .filter((item) => item.effectiveDate > new Date())
     .sort((a, b) => a.effectiveDate.getTime() - b.effectiveDate.getTime())[0];
 
   return (
@@ -1385,7 +1404,7 @@ export default function PetDetailPage({
           {/* SIDEBAR*/}
           <div className="sidebar-col no-print">
             {/* NEXT APPOINTMENT */}
-            {nextVaccine && (
+            {next_appointment && (
               <div
                 style={{
                   background: "#0e5c57",
@@ -1416,13 +1435,10 @@ export default function PetDetailPage({
                     marginBottom: "4px",
                   }}
                 >
-                  {new Date(nextVaccine.next_due_date!).toLocaleDateString(
-                    "en",
-                    {
-                      month: "short",
-                      day: "numeric",
-                    },
-                  )}
+                  {next_appointment.effectiveDate.toLocaleDateString("en", {
+                    month: "short",
+                    day: "numeric",
+                  })}
                 </div>
                 <div
                   style={{
@@ -1431,9 +1447,9 @@ export default function PetDetailPage({
                     marginBottom: "12px",
                   }}
                 >
-                  {nextVaccine.vaccine_name}
+                  {next_appointment.name}
                 </div>
-                {nextVaccine.clinic && (
+                {next_appointment.clinic && (
                   <div
                     style={{
                       background: "rgba(255,255,255,0.1)",
@@ -1443,7 +1459,7 @@ export default function PetDetailPage({
                       wordBreak: "break-word",
                     }}
                   >
-                    📍 {nextVaccine.clinic}
+                    📍 {next_appointment.clinic}
                   </div>
                 )}
               </div>
