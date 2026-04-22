@@ -30,17 +30,40 @@ export async function GET(
   }
   const { pet } = petResult;
 
-  //判斷是否要強制重新分析
+  //判斷refresh是true or false
   const refresh = req.nextUrl.searchParams.get("refresh") === "true";
 
-  //判斷資料庫有沒有舊的auto分析
+  //今天開始的時間
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  //找今天有沒有分析過了
+  const todayAnalysis = await prisma.aiAnalysis.findFirst({
+    where: {
+      pet_id: BigInt(id),
+      type: "auto",
+      created_at: { gte: today },
+    },
+  });
+  //今天分析過了，有沒有fresh都直接回快取
+  if (todayAnalysis && todayAnalysis.result) {
+    const cashed = JSON.parse(todayAnalysis.result);
+    return NextResponse.json({
+      ...cashed,
+      cashed: true,
+      created_at: todayAnalysis.created_at,
+      message: "今天已經分析過了，請明天再重新分析",
+    });
+  }
+
+  //今天還沒分析過，找有沒有舊的快取
   if (!refresh) {
     const existing = await prisma.aiAnalysis.findFirst({
       where: { pet_id: BigInt(id), type: "auto" },
       orderBy: { created_at: "desc" },
     });
-    if (existing) {
-      const cached = JSON.parse(existing.result as string);
+    if (existing && existing.result) {
+      const cached = JSON.parse(existing.result);
       return NextResponse.json({
         ...cached,
         cached: true,

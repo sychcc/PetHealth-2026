@@ -58,6 +58,14 @@ export async function POST(req: NextRequest) {
   if (!user)
     return NextResponse.json({ error: "使用者不存在" }, { status: 401 });
 
+  //限制寵物數量，不能超過10隻
+  const petCount = await prisma.pet.count({
+    where: { user_id: user.id },
+  });
+  if (petCount >= 10) {
+    return NextResponse.json({ error: "最多只能新增10隻寵物" });
+  }
+
   const pet = await prisma.pet.create({
     data: {
       user_id: user.id,

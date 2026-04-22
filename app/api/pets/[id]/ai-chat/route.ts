@@ -141,7 +141,7 @@ export async function POST(
     return NextResponse.json({ error: "請輸入問題" }, { status: 400 });
 
   const systemPrompt = `你是一個專業的寵物健康助理，正在幫助分析寵物「${pet.name}」（${pet.species}）的健康狀況。
-請用繁體中文回答，並在需要時使用工具查詢資料。`;
+請用繁體中文回答，並在需要時使用工具查詢資料。另外只能回答關於寵物 ${pet.name}健康相關問題，如果使用者問題和寵物健康無關，請禮貌拒絕並說明你只能回答寵物的問題`;
 
   // 第一次呼叫 Gemini
   const chat = model.startChat({
