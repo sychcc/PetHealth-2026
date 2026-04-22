@@ -191,7 +191,6 @@ export default function CreateVaccinePage({
                 <label style={labelStyle}>Next Due Date</label>
                 <input
                   type="date"
-                  min={new Date().toISOString().split("T")[0]}
                   value={nextDueDate}
                   onChange={(e) => setNextDueDate(e.target.value)}
                   style={inputStyle}
