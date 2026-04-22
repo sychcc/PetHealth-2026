@@ -143,6 +143,23 @@ export async function POST(
   const systemPrompt = `你是一個專業的寵物健康助理，正在幫助分析寵物「${pet.name}」（${pet.species}）的健康狀況。
 請用繁體中文回答，並在需要時使用工具查詢資料。另外只能回答關於寵物 ${pet.name}健康相關問題，如果使用者問題和寵物健康無關，請禮貌拒絕並說明你只能回答寵物的問題`;
 
+  //呼叫前，檢查今天使用幾次ai-chat了（一天3次）
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const todayCount = await prisma.aiAnalysis.count({
+    where: {
+      pet_id: BigInt(id),
+      type: "chat",
+      created_at: { gte: today },
+    },
+  });
+  if (todayCount >= 3) {
+    return NextResponse.json({
+      message: "今天已達到每日限制的題數三題，請明天再發問",
+    });
+  }
   // 第一次呼叫 Gemini
   const chat = model.startChat({
     history: [

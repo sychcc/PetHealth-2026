@@ -252,6 +252,7 @@ export default function PetDetailPage({
   const [analysisCreatedAt, setAnalysisCreatedAt] = useState<string | null>(
     null,
   );
+  const [chatError, setChatError] = useState("");
   const [chatQuestion, setChatQuestion] = useState("");
   const [chatHistory, setChatHistory] = useState<
     { question: string; answer: string; open: boolean }[]
@@ -374,6 +375,12 @@ export default function PetDetailPage({
       body: JSON.stringify({ question: chatQuestion }),
     });
     const data = await res.json();
+    if (data.message) {
+      setChatError(data.message);
+      setChatQuestion("");
+      setLoadingChat(false);
+      return;
+    }
     const answer = data.answer.replace(/#{1,3}\s/g, "").replace(/\*\*/g, "");
     setChatHistory((prev) => {
       const updated = [
@@ -1541,6 +1548,7 @@ export default function PetDetailPage({
                     minWidth: 0,
                   }}
                 />
+
                 <button
                   onClick={handleChat}
                   disabled={loadingChat || !chatQuestion.trim()}
@@ -1559,6 +1567,18 @@ export default function PetDetailPage({
                   {loadingChat ? "..." : "Ask"}
                 </button>
               </div>
+              {/* chat error */}
+              {chatError && (
+                <div
+                  style={{
+                    fontSize: "12px",
+                    color: "#c0392b",
+                    marginTop: "6px",
+                  }}
+                >
+                  {chatError}
+                </div>
+              )}
 
               {/* Chat History */}
               {chatHistory.length > 0 && (
