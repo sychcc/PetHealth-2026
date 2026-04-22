@@ -220,6 +220,7 @@ export default function PetsPage() {
                   fontSize: "14px",
                   fontWeight: 600,
                   display: "inline-block",
+                  width: "fit-content",
                 }}
               >
                 View Full Profile →
