@@ -100,7 +100,7 @@ export default function LoginPage() {
               </label>
               <input
                 type="email"
-                placeholder="you@example.com"
+                placeholder="pet_test@test.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 style={{
@@ -129,7 +129,7 @@ export default function LoginPage() {
               </label>
               <input
                 type="password"
-                placeholder="••••••••"
+                placeholder="pethealth"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 style={{
