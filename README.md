@@ -105,15 +105,68 @@ docker run -d --name pethealth -p 3000:3000 --env-file .env sychcc/pethealth:lat
 
 ## Database Design (ERD)
 
-```
-users (1)
-  └── pets (N)                    user_id → users.id
-        ├── vaccines (N)          pet_id  → pets.id  onDelete: Cascade
-        ├── weight_records (N)    pet_id  → pets.id  onDelete: Cascade
-        ├── medical_records (N)   pet_id  → pets.id  onDelete: Cascade
-        ├── reminders (N)         pet_id  → pets.id  onDelete: Cascade
-        ├── ai_analyses (N)       pet_id  → pets.id  onDelete: Cascade
-        └── pet_checklist_items(N)pet_id  → pets.id  onDelete: Cascade
+```mermaid
+erDiagram
+  User ||--o{ Pet : "1:N"
+  Pet ||--o{ Vaccine : "1:N"
+  Pet ||--o{ WeightRecord : "1:N"
+  Pet ||--o{ MedicalRecord : "1:N"
+  Pet ||--o{ Reminder : "1:N"
+  Pet ||--o{ AiAnalysis : "1:N"
+  Pet ||--o{ PetChecklistItem : "1:N"
+
+  User {
+    BigInt id PK
+    String email UK
+    String password "nullable"
+    String provider
+  }
+  Pet {
+    BigInt id PK
+    BigInt user_id FK
+    String name
+    String species
+    String gender "nullable"
+    Decimal target_weight "nullable"
+  }
+  Vaccine {
+    BigInt id PK
+    BigInt pet_id FK
+    String vaccine_name
+    DateTime next_due_date "nullable"
+  }
+  WeightRecord {
+    BigInt id PK
+    BigInt pet_id FK
+    Decimal weight
+    DateTime date
+  }
+  MedicalRecord {
+    BigInt id PK
+    BigInt pet_id FK
+    String brief_name
+    DateTime next_appointment "nullable"
+    String diagnosis "nullable"
+    Int cost "nullable"
+  }
+  PetChecklistItem {
+    BigInt id PK
+    BigInt pet_id FK
+    String item_key
+    Boolean is_completed
+  }
+  Reminder {
+    BigInt id PK
+    BigInt pet_id FK
+    DateTime due_date
+    Boolean sent
+  }
+  AiAnalysis {
+    BigInt id PK
+    BigInt pet_id FK
+    String type "auto or chat"
+    String result "nullable"
+  }
 ```
 
 Key design decisions:
@@ -125,6 +178,7 @@ Key design decisions:
 ---
 
 ## API Design
+
 > API Docs：[PetHealth API Docs](https://sychcc.stoplight.io/docs/pethealth/kuvmgl9p9swk6-pet-health-api)
 
 ### Authentication
