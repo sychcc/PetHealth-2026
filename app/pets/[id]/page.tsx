@@ -429,12 +429,14 @@ export default function PetDetailPage({
   const dashOffset = circumference - (completionRate / 100) * circumference;
 
   const nextVaccine = vaccineRecords
-    .filter((v) => v.next_due_date && new Date(v.next_due_date) > new Date())
-    .sort(
-      (a, b) =>
-        new Date(a.next_due_date!).getTime() -
-        new Date(b.next_due_date!).getTime(),
-    )[0];
+    .map((v) => ({
+      ...v,
+      effectiveDate: v.next_due_date
+        ? new Date(v.next_due_date)
+        : new Date(v.date),
+    }))
+    .filter((v) => v.effectiveDate > new Date())
+    .sort((a, b) => a.effectiveDate.getTime() - b.effectiveDate.getTime())[0];
 
   return (
     <div
