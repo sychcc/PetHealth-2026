@@ -44,7 +44,8 @@ export async function POST(req: NextRequest) {
   }
   //有登入
   //先驗證欄位有沒有正確，正確才去資料庫查user => Fail Fast
-  const { name, species, birthdate, chip_number, photo_url } = await req.json();
+  const { name, breed, gender, species, birthdate, chip_number, photo_url } =
+    await req.json();
 
   if (!name || !species || !birthdate) {
     return NextResponse.json(
@@ -70,6 +71,8 @@ export async function POST(req: NextRequest) {
     data: {
       user_id: user.id,
       name,
+      breed,
+      gender,
       species,
       birthdate: new Date(birthdate),
       chip_number,
