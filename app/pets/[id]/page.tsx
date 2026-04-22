@@ -245,6 +245,7 @@ export default function PetDetailPage({
   const [error, setError] = useState("");
   const [id, setId] = useState<string>("");
   const [summary, setSummary] = useState("");
+  const [aiMsg, setAiMsg] = useState("");
   const [fullReport, setFullReport] = useState("");
   const [showFull, setShowFull] = useState(false);
   const [loadingAi, setLoadingAi] = useState(false);
@@ -358,6 +359,7 @@ export default function PetDetailPage({
         setSummary(data.summary);
         setFullReport(data.full_report);
         setAnalysisCreatedAt(data.created_at || null);
+        setAiMsg(data.message || "");
         setLoadingAi(false);
       });
   }
@@ -743,6 +745,18 @@ export default function PetDetailPage({
                   {loadingAi ? "Analysing..." : "Re-analyse"}
                 </button>
               </div>
+              {/* ai訊息 */}
+              {aiMsg && (
+                <div
+                  style={{
+                    marginTop: "10px",
+                    fontSize: "12px",
+                    color: "rgba(255,255,255,0.5)",
+                  }}
+                >
+                  {aiMsg}
+                </div>
+              )}
               {showFull && fullReport && (
                 <div
                   style={{

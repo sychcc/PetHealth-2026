@@ -202,16 +202,16 @@ export default function CreateMedicalPage({
                   style={inputStyle}
                 />
               </div>
-              <div>
-                <label style={labelStyle}>Clinic</label>
-                <input
-                  type="text"
-                  placeholder="Optional"
-                  value={clinic}
-                  onChange={(e) => setClinic(e.target.value)}
-                  style={inputStyle}
-                />
-              </div>
+            </div>
+            <div>
+              <label style={labelStyle}>Clinic</label>
+              <input
+                type="text"
+                placeholder="Optional"
+                value={clinic}
+                onChange={(e) => setClinic(e.target.value)}
+                style={inputStyle}
+              />
             </div>
             <div>
               <label style={labelStyle}>Symptoms</label>

@@ -7,6 +7,7 @@ type Medical = {
   id: string;
   brief_name: string;
   date: string;
+  next_appointment: string;
   clinic: string | null;
   symptoms: string | null;
   diagnosis: string | null;
@@ -221,6 +222,8 @@ export default function MedicalPage({
                     <div style={{ fontSize: "13px", color: "#4a6968" }}>
                       {new Date(m.date).toLocaleDateString()}
                       {m.clinic && ` · ${m.clinic}`}
+                      {m.next_appointment &&
+                        ` · 下次預約日 ${new Date(m.next_appointment).toLocaleDateString()}`}
                     </div>
                   </div>
                   {m.cost && (

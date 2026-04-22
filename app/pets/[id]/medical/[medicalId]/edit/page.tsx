@@ -38,6 +38,7 @@ export default function EditMedicalPage({
   const [medicalId, setMedicalId] = useState("");
   const [briefName, setBriefName] = useState("");
   const [date, setDate] = useState("");
+  const [next_appointment, setNext_appointment] = useState("");
   const [symptoms, setSymptoms] = useState("");
   const [clinic, setClinic] = useState("");
   const [diagnosis, setDiagnosis] = useState("");
@@ -70,6 +71,7 @@ export default function EditMedicalPage({
         if (medical) {
           setBriefName(medical.brief_name);
           setDate(medical.date.split("T")[0]);
+          setNext_appointment(medical.next_appointment.split("T")[0]);
           setClinic(medical.clinic || "");
           setSymptoms(medical.symptoms || "");
           setPrescription(medical.prescription || "");
@@ -103,6 +105,7 @@ export default function EditMedicalPage({
       body: JSON.stringify({
         brief_name: briefName,
         date,
+        next_appointment,
         clinic,
         symptoms,
         diagnosis,
@@ -238,15 +241,24 @@ export default function EditMedicalPage({
                 />
               </div>
               <div>
-                <label style={labelStyle}>Clinic</label>
+                <label style={labelStyle}>Next Appointment</label>
                 <input
-                  type="text"
-                  placeholder="Optional"
-                  value={clinic}
-                  onChange={(e) => setClinic(e.target.value)}
+                  type="date"
+                  value={next_appointment}
+                  onChange={(e) => setNext_appointment(e.target.value)}
                   style={inputStyle}
                 />
               </div>
+            </div>
+            <div>
+              <label style={labelStyle}>Clinic</label>
+              <input
+                type="text"
+                placeholder="Optional"
+                value={clinic}
+                onChange={(e) => setClinic(e.target.value)}
+                style={inputStyle}
+              />
             </div>
 
             <div>
